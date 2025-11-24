@@ -12,6 +12,7 @@ public sealed partial class ChatView : UserControl
 {
 
     private ChatViewModel? _chatViewModel;
+    public ChatViewModel? ViewModel => _chatViewModel;
 
     public ChatView()
     {
@@ -64,5 +65,10 @@ public sealed partial class ChatView : UserControl
                 ((FrameworkElement)lastMessageContainer).StartBringIntoView(options);
             }
         });
+    }
+
+    public Visibility BusyToVisibility(bool isBusy)
+    {
+        return isBusy ? Visibility.Visible : Visibility.Collapsed;
     }
 }
