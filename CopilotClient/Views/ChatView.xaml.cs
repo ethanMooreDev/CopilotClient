@@ -1,9 +1,11 @@
+using CopilotClient.Models;
 using CopilotClient.Services;
 using CopilotClient.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Specialized;
+using System.Data;
 using System.Linq;
 
 namespace CopilotClient.Views;
@@ -17,6 +19,8 @@ public sealed partial class ChatView : UserControl
     public ChatView()
     {
         InitializeComponent();
+
+        RootGrid.SizeChanged += (_, __) => Bindings.Update();
 
         DataContextChanged += ChatView_DataContextChanged;
     }
