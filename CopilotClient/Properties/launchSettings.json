@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "CopilotClient (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "CopilotClient (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
