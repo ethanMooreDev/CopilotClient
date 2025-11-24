@@ -3,6 +3,7 @@ using CopilotClient.Services;
 using CopilotClient.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Collections.Specialized;
 using System.Data;
@@ -23,6 +24,14 @@ public sealed partial class ChatView : UserControl
         RootGrid.SizeChanged += (_, __) => Bindings.Update();
 
         DataContextChanged += ChatView_DataContextChanged;
+    }
+
+    private void TypingIndicator_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (Resources["TypingDotsStoryboard"] is Storyboard storyboard)
+        {
+            storyboard.Begin();
+        }
     }
 
     private void ChatView_DataContextChanged(Microsoft.UI.Xaml.FrameworkElement sender, Microsoft.UI.Xaml.DataContextChangedEventArgs args)

@@ -11,6 +11,7 @@
 >
 
     <UserControl.Resources>
+        
         <!-- USER MESSAGE TEMPLATE -->
         <DataTemplate x:Key="UserMessageTemplate" >
             <StackPanel Margin="0,0,0,8">
@@ -31,6 +32,7 @@
                 </Border>
             </StackPanel>
         </DataTemplate>
+        
         <!-- ASSISTANT MESSAGE TEMPLATE -->
         <DataTemplate x:Key="AssistantMessageTemplate" >
             <StackPanel Margin="0,0,0,8">
@@ -50,10 +52,50 @@
                 </Border>
             </StackPanel>
         </DataTemplate>
+        
         <!-- TEMPLATE SELECTOR -->
-        <views:MessageTemplateSelector x:Key="MessageTemplateSelector"
-                                   UserTemplate="{StaticResource UserMessageTemplate}"
-                                   AssistantTemplate="{StaticResource AssistantMessageTemplate}" />
+        <views:MessageTemplateSelector
+            x:Key="MessageTemplateSelector"
+            UserTemplate="{StaticResource UserMessageTemplate}"
+            AssistantTemplate="{StaticResource AssistantMessageTemplate}"
+        />
+        
+        <!-- LOADING ANIMATIONS -->
+        <Storyboard x:Key="TypingDotsStoryboard" RepeatBehavior="Forever">
+            
+            <!-- Dot1 animation -->
+            <DoubleAnimationUsingKeyFrames 
+                Storyboard.TargetName="Dot1"
+                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                BeginTime="0:0:0"
+            >
+                <EasingDoubleKeyFrame  KeyTime="0:0:0" Value="0" />
+                <EasingDoubleKeyFrame  KeyTime="0:0:0.2" Value="-4" />
+                <EasingDoubleKeyFrame  KeyTime="0:0:0.4" Value="0" />
+            </DoubleAnimationUsingKeyFrames>
+            
+            <!-- Dot2 animation -->
+            <DoubleAnimationUsingKeyFrames 
+                Storyboard.TargetName="Dot2"
+                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                BeginTime="0:0:0.2"
+            >
+                <EasingDoubleKeyFrame  KeyTime="0:0:0" Value="0" />
+                <EasingDoubleKeyFrame  KeyTime="0:0:0.2" Value="-4" />
+                <EasingDoubleKeyFrame  KeyTime="0:0:0.4" Value="0" />
+            </DoubleAnimationUsingKeyFrames>
+            
+            <!-- Dot3 animation -->
+            <DoubleAnimationUsingKeyFrames 
+                Storyboard.TargetName="Dot3"
+                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                BeginTime="0:0:0.4"
+            >
+                <EasingDoubleKeyFrame  KeyTime="0:0:0" Value="0" />
+                <EasingDoubleKeyFrame  KeyTime="0:0:0.2" Value="-4" />
+                <EasingDoubleKeyFrame  KeyTime="0:0:0.4" Value="0" />
+            </DoubleAnimationUsingKeyFrames>
+        </Storyboard>
     </UserControl.Resources>
 
     <Grid x:Name="RootGrid" Background="#0B1120" Padding="16">
@@ -78,18 +120,42 @@
             Grid.Row="1"
             Orientation="Horizontal"
             Visibility="{x:Bind BusyToVisibility(ViewModel.IsBusy), Mode=OneWay}"
+            Loaded="TypingIndicator_Loaded"
         >
-            <ProgressRing 
-                Width="16"
-                Height="16"
-                IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}" 
-                Margin="0,0,8,0"
-            />
-            <TextBlock 
-                Text="Copilot is thinking..."
-                Foreground="#9CA3AF"
-                VerticalAlignment="Center"
-            />
+            <TextBlock Text="Copilot is thinking" />
+            <Ellipse 
+                x:Name="Dot1"
+                Width="6" 
+                Height="6"
+                Fill="White"
+                Margin="4,0,0,0"
+            >
+                <Ellipse.RenderTransform>
+                    <TranslateTransform />
+                </Ellipse.RenderTransform>
+            </Ellipse>
+            <Ellipse 
+                x:Name="Dot2"
+                Width="6" 
+                Height="6"
+                Fill="White"
+                Margin="4,0,0,0"
+            >
+                <Ellipse.RenderTransform>
+                    <TranslateTransform />
+                </Ellipse.RenderTransform>
+            </Ellipse>
+            <Ellipse 
+                x:Name="Dot3"
+                Width="6" 
+                Height="6"
+                Fill="White"
+                Margin="4,0,0,0"
+            >
+                <Ellipse.RenderTransform>
+                    <TranslateTransform />
+                </Ellipse.RenderTransform>
+            </Ellipse>
         </StackPanel>
 
         <!-- Input row -->
