@@ -1,13 +1,12 @@
-using CopilotClient.Models;
-using CopilotClient.Services;
 using CopilotClient.ViewModels;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Collections.Specialized;
-using System.Data;
 using System.Linq;
+using Windows.UI.Core;
 
 namespace CopilotClient.Views;
 
@@ -83,5 +82,46 @@ public sealed partial class ChatView : UserControl
     public Visibility BusyToVisibility(bool isBusy)
     {
         return isBusy ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void TextBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if(e.Key != Windows.System.VirtualKey.Enter)
+        {
+            return;
+        }
+
+        if (sender is not TextBox textBox)
+        {
+            return;
+        }
+
+        var shiftState = InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Shift);
+
+        bool shiftDown = shiftState.HasFlag(CoreVirtualKeyStates.Down);
+
+        if (shiftDown)
+        {
+            // Manually insert a newline at the caret position
+            int caretIndex = textBox.SelectionStart;
+            string current = textBox.Text ?? string.Empty;
+
+            string toInsert = Environment.NewLine;
+            textBox.Text = current.Insert(caretIndex, toInsert);
+
+            // Move caret after the newline
+            textBox.SelectionStart = caretIndex + toInsert.Length;
+            textBox.SelectionLength = 0;
+
+            e.Handled = true;
+            return;
+        }
+
+        // Plain Enter: send the message via the ViewModel's command
+        if (DataContext is ChatViewModel vm && vm.SendCommand.CanExecute(null))
+        {
+            vm.SendCommand.Execute(null);
+            e.Handled = true;
+        }
     }
 }

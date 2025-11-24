@@ -43,6 +43,7 @@
                     HorizontalAlignment="Left"
                 >
                     <controls:MarkdownTextBlock 
+                        Grid.Row="1"
                         Text="{Binding Content}"
                         TextWrapping="Wrap"
                         Foreground="White"
@@ -167,12 +168,13 @@
 
             <TextBox Grid.Column="0"
                  Text="{Binding InputText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                 AcceptsReturn="True"
+                 AcceptsReturn="False"
                  TextWrapping="Wrap"
                  MinHeight="40"
                  MaxHeight="100"
                  PlaceholderText="Ask something..."
                  Margin="0,0,8,0"
+                 KeyDown="TextBox_KeyDown"
             />
 
             <Button Grid.Column="1"
