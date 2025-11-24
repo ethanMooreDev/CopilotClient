@@ -8,6 +8,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     xmlns:views="using:CopilotClient.Selectors"
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
 >
 
     <UserControl.Resources>
@@ -20,7 +21,6 @@
                     CornerRadius="8"
                     Background="#1f5191"
                     MaxWidth="800"
-                    MinWidth="400"
                     HorizontalAlignment="Right"
                 >
                     <TextBlock 
@@ -40,14 +40,14 @@
                     Padding="8"
                     CornerRadius="8"
                     MaxWidth="800"
-                    MinWidth="400"
                     HorizontalAlignment="Left"
                 >
-                    <TextBlock 
+                    <controls:MarkdownTextBlock 
                         Text="{Binding Content}"
                         TextWrapping="Wrap"
                         Foreground="White"
                         HorizontalAlignment="Left"
+                        Background="Transparent"
                     />
                 </Border>
             </StackPanel>

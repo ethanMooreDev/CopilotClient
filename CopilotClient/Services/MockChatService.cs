@@ -11,13 +11,33 @@ namespace CopilotClient.Services;
 public class MockChatService : IChatService
 {
     private static readonly string[] Responses =
-    [
-        "Got it! Let me think about that for a second...",
-        "Interesting question. How would you approach it?",
-        "If I were implementing this, I’d start by breaking it into smaller steps.",
-        "That sounds like a real-world scenario—tell me more about the constraints.",
-        "I hear you. Let’s try to narrow this down."
-    ];
+    {
+        """
+        **Got it!**  
+        Let me think about that for a moment… 🤔
+        """,
+
+        """
+        Here's one way to break that down:
+        1. Understand the problem  
+        2. Identify inputs & outputs  
+        3. Sketch the logic  
+        4. Write a prototype
+        """,
+
+        """
+        Here’s a quick example:
+
+        ```csharp
+        void DoWork()
+        {
+            Step1();
+            Step2();
+        }
+        ```
+        """
+    };
+
 
     private readonly Random _random = new();
 
