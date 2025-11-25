@@ -52,6 +52,15 @@ public class MockChatService : IChatService
             ? baseResponse
             : $"{baseResponse}\n\nYou Said: \"{lastUser.Content}\"";
 
-        return new ChatMessage(ChatRole.Assistant, content, DateTime.Now);
+        var chatMessage = new ChatMessage(
+            clientId: Guid.NewGuid(),
+            role: ChatRole.Assistant,
+            content: content,
+            createdAt: DateTime.UtcNow,
+            status: MessageStatus.Sent,
+            serverId: Guid.NewGuid()
+        );
+
+        return chatMessage;
     }
 }

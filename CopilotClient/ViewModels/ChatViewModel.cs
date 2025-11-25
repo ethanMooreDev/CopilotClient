@@ -85,7 +85,7 @@ public class ChatViewModel : INotifyPropertyChanged
 
         InputText = string.Empty;
 
-        var userMessage = new ChatMessage(ChatRole.User, text, DateTime.Now);
+        var userMessage = ChatMessage.CreateNewUserMessage(text);
         Messages.Add(userMessage);
 
         IsBusy = true;
@@ -96,7 +96,7 @@ public class ChatViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            Messages.Add(new ChatMessage(ChatRole.System, $"Error: {ex.Message}", DateTime.Now));
+            // add a message for error display
         }
         finally
         {
