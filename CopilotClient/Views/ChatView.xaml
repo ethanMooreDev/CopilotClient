@@ -21,13 +21,49 @@
 
     <Grid x:Name="RootGrid" Background="#0B1120" Padding="16">
         <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,8" Width="800">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Title + Subtitle -->
+            <StackPanel Orientation="Vertical" Grid.Column="0">
+                <TextBlock 
+                    Text="{Binding Title}"
+                    FontSize="20"
+                    FontWeight="SemiBold"
+                    Foreground="White"
+                />
+            </StackPanel>
+
+            <!-- Right-side actions -->
+            <StackPanel 
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="8"
+                VerticalAlignment="Center"
+            >
+                <Button Command="{Binding OpenSettingsCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <SymbolIcon Symbol="Setting" />
+                        <TextBlock Text="Settings" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <Rectangle Grid.Row="1" Height="1" Width="800" Fill="#1F2937" Margin="0,8,0,8" />
+
         <!-- Messages list -->
-        <ScrollViewer Grid.Row="0" x:Name="MessageScrollViewer">
+        <ScrollViewer Grid.Row="2" x:Name="MessageScrollViewer">
             <ItemsControl
                 x:Name="MessagesItemsControl"
                 ItemTemplateSelector="{StaticResource MessageTemplateSelector}"
@@ -39,7 +75,7 @@
         </ScrollViewer>
 
         <!-- Input row -->
-        <Grid Grid.Row="2" Margin="0,12,0,0" Width="800">
+        <Grid Grid.Row="3" Margin="0,12,0,0" Width="800">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />

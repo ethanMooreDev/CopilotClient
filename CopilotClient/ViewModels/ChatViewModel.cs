@@ -15,9 +15,12 @@ public class ChatViewModel : INotifyPropertyChanged
     private readonly IChatService _chatService;
     private bool _isBusy;
     private string _inputText = string.Empty;
+    private string _title;
     private bool _sendEnabled = false;
 
-    public ObservableCollection<ChatMessage> Messages { get; } = new();
+    private readonly Conversation _conversation;
+
+    public ObservableCollection<ChatMessage> Messages { get; }
 
     public string InputText
     {
@@ -63,16 +66,44 @@ public class ChatViewModel : INotifyPropertyChanged
         }
     }
 
+    public string Title
+    {
+        get => _title;
+        set
+        {
+            if (_title != value)
+            {
+                _title = value;
+                _conversation.Title = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
     public ICommand SendCommand { get; }
 
-    public ChatViewModel(IChatService chatService)
+    public ICommand OpenSettingsCommand { get; }
+
+    public ChatViewModel(IChatService chatService) : this(chatService, new Conversation())
+    {
+    }
+
+    public ChatViewModel(IChatService chatService, Conversation conversation)
     {
         _chatService = chatService;
+
+        _conversation = conversation;
+
+        Messages = new ObservableCollection<ChatMessage>(_conversation.Messages);
+
+        Title = _conversation.Title;
 
         SendCommand = new RelayCommand(
             async _ => await SendAsync(),
             _ => !IsBusy && !string.IsNullOrWhiteSpace(InputText)
         );
+
+        OpenSettingsCommand = new RelayCommand(_ => OpenSettings());
     }
 
     private async Task SendAsync()
@@ -86,7 +117,18 @@ public class ChatViewModel : INotifyPropertyChanged
         InputText = string.Empty;
 
         var userMessage = ChatMessage.CreateNewUserMessage(text);
-        Messages.Add(userMessage);
+        AddMessage(userMessage);
+
+        if(Messages.Count == 1)
+        {
+            if (!string.IsNullOrWhiteSpace(Title))
+            {
+                Title = userMessage.Content.Length > 40
+                    ? $"{userMessage.Content[..40]}..."
+                    : userMessage.Content;
+            }
+                
+        }
 
         var assistantMessage = new ChatMessage(
             clientId: Guid.NewGuid(),
@@ -96,27 +138,45 @@ public class ChatViewModel : INotifyPropertyChanged
             createdAt: DateTime.Now
         );
 
-        Messages.Add(assistantMessage);
+        AddMessage(assistantMessage);
 
         IsBusy = true;
         try
         {
             var replyMessage = await _chatService.SendAsync(Messages.ToList());
             userMessage.Status = MessageStatus.Sent;
-            Messages.Remove(assistantMessage);
-            Messages.Add(replyMessage);
+            RemoveMessage(assistantMessage);
+            AddMessage(replyMessage);
         }
         catch (Exception ex)
         {
             assistantMessage.Status = MessageStatus.Failed;
             assistantMessage.ErrorMessage = ex.Message;
             assistantMessage.Content = ex.Message;
-            // add a message for error display
         }
         finally
         {
             IsBusy = false;
         }
+    }
+
+    private void OpenSettings()
+    {
+        
+    }
+
+    private void AddMessage(ChatMessage m)
+    {
+        Messages.Add(m);
+        _conversation.Messages.Add(m);
+        _conversation.LastUpdatedAt = DateTime.UtcNow;
+    }
+
+    private void RemoveMessage(ChatMessage m)
+    {
+        Messages.Remove(m);
+        _conversation.Messages.Remove(m);
+        _conversation.LastUpdatedAt = DateTime.UtcNow;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
