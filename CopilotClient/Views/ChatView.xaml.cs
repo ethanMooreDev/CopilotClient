@@ -48,28 +48,47 @@ public sealed partial class ChatView : UserControl
     }
 
     private void Messages_CollectionChanged(
-        object? sender, 
+        object? sender,
         System.Collections.Specialized.NotifyCollectionChangedEventArgs e
     )
     {
-        if(e.Action != NotifyCollectionChangedAction.Add)
+        if (e.Action != NotifyCollectionChangedAction.Add)
         {
             return;
         }
-        if(e.NewItems == null)
+        if (e.NewItems == null)
         {
             return;
         }
 
         DispatcherQueue.TryEnqueue(() =>
         {
+
+            // If the view is no longer loaded, bail out
+            if (!IsLoaded)
+            {
+                return;
+            }
+
+            // If the ItemsControl isn't ready / attached, bail out
+            if (MessagesItemsControl == null ||
+                MessagesItemsControl.XamlRoot == null ||
+                MessagesItemsControl.Items.Count == 0)
+            {
+                return;
+            }
+
             MessagesItemsControl.UpdateLayout();
 
-            var lastMessage = _chatViewModel!.Messages.Last();
+            var lastMessage = _chatViewModel!.Messages.LastOrDefault();
+            if (lastMessage is null)
+            {
+                return;
+            }
 
             var lastMessageContainer = MessagesItemsControl.ContainerFromItem(lastMessage);
 
-            if( lastMessageContainer != null && lastMessageContainer is FrameworkElement )
+            if (lastMessageContainer != null && lastMessageContainer is FrameworkElement)
             {
                 BringIntoViewOptions options = new();
                 options.VerticalAlignmentRatio = 1;

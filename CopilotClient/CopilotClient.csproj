@@ -13,6 +13,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Resources\MessageTemplates.xaml" />
     <None Remove="Views\ChatView.xaml" />
   </ItemGroup>
 
@@ -45,6 +46,11 @@
   </ItemGroup>
   <ItemGroup>
     <Page Update="Views\ChatView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Resources\MessageTemplates.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>

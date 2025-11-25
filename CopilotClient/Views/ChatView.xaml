@@ -7,131 +7,56 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    xmlns:views="using:CopilotClient.Selectors"
     xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
     xmlns:converters="using:CopilotClient.Converters"
+    xmlns:selectors="using:CopilotClient.Selectors"
 >
     <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ms-appx:///Resources/MessageTemplates.xaml" />
+            </ResourceDictionary.MergedDictionaries>
 
-        <converters:DateToStringConverter x:Key="DateToStringConverter" />
+            <converters:DateToStringConverter x:Key="DateToStringConverter" />
 
-        <!-- USER MESSAGE TEMPLATE -->
-        <DataTemplate x:Key="UserMessageTemplate" >
-            <StackPanel Margin="0,0,0,8">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <Border 
-                        Grid.Row="0"
-                        Padding="8"
-                        CornerRadius="8"
-                        Background="#1f5191"
-                        MaxWidth="800"
-                        HorizontalAlignment="Right"
-                    >
-                        <TextBlock 
-                            Text="{Binding Content}"
-                            TextWrapping="Wrap"
-                            Foreground="White"
-                            HorizontalAlignment="Right"
-                             
-                        />
-                    </Border>
-                    <TextBlock
-                        Grid.Row="1"
-                        HorizontalAlignment="Right"
-                        Margin="4"
-                        Text="{Binding CreatedAt, Converter={StaticResource DateToStringConverter} }"
-                    />
-                    <TextBlock
-                        Grid.Row="2"
-                        HorizontalAlignment="Right"
-                        Margin="4,0,4,4"
-                        Text="{Binding StatusString}"
-                    />
-                </Grid>
-            </StackPanel>
-        </DataTemplate>
-        
-        <!-- ASSISTANT MESSAGE TEMPLATE -->
-        <DataTemplate x:Key="AssistantMessageTemplate" >
-            <StackPanel Margin="0,0,0,8">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <Border 
-                        Grid.Row="0"
-                        Padding="8"
-                        CornerRadius="8"
-                        MaxWidth="800"
-                        HorizontalAlignment="Left"
-                    >
-                        <controls:MarkdownTextBlock 
-                            Text="{Binding Content}"
-                            TextWrapping="Wrap"
-                            Foreground="White"
-                            HorizontalAlignment="Left"
-                            Background="Transparent"
-                        />
-                    </Border>
-                    <TextBlock
-                        Grid.Row="1"
-                        HorizontalAlignment="Left"
-                        Margin="4"
-                        Text="{Binding CreatedAt, Converter={StaticResource DateToStringConverter} }"
-                    />
-                </Grid>
-            </StackPanel>
-        </DataTemplate>
-        
-        <!-- TEMPLATE SELECTOR -->
-        <views:MessageTemplateSelector
-            x:Key="MessageTemplateSelector"
-            UserTemplate="{StaticResource UserMessageTemplate}"
-            AssistantTemplate="{StaticResource AssistantMessageTemplate}"
-        />
-        
-        <!-- LOADING ANIMATIONS -->
-        <Storyboard x:Key="TypingDotsStoryboard" RepeatBehavior="Forever">
-            
-            <!-- Dot1 animation -->
-            <DoubleAnimationUsingKeyFrames 
-                Storyboard.TargetName="Dot1"
-                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                BeginTime="0:0:0"
-            >
-                <EasingDoubleKeyFrame  KeyTime="0:0:0" Value="0" />
-                <EasingDoubleKeyFrame  KeyTime="0:0:0.2" Value="-4" />
-                <EasingDoubleKeyFrame  KeyTime="0:0:0.4" Value="0" />
-            </DoubleAnimationUsingKeyFrames>
-            
-            <!-- Dot2 animation -->
-            <DoubleAnimationUsingKeyFrames 
-                Storyboard.TargetName="Dot2"
-                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                BeginTime="0:0:0.2"
-            >
-                <EasingDoubleKeyFrame  KeyTime="0:0:0" Value="0" />
-                <EasingDoubleKeyFrame  KeyTime="0:0:0.2" Value="-4" />
-                <EasingDoubleKeyFrame  KeyTime="0:0:0.4" Value="0" />
-            </DoubleAnimationUsingKeyFrames>
-            
-            <!-- Dot3 animation -->
-            <DoubleAnimationUsingKeyFrames 
-                Storyboard.TargetName="Dot3"
-                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                BeginTime="0:0:0.4"
-            >
-                <EasingDoubleKeyFrame  KeyTime="0:0:0" Value="0" />
-                <EasingDoubleKeyFrame  KeyTime="0:0:0.2" Value="-4" />
-                <EasingDoubleKeyFrame  KeyTime="0:0:0.4" Value="0" />
-            </DoubleAnimationUsingKeyFrames>
-        </Storyboard>
+            <!-- LOADING ANIMATIONS -->
+            <Storyboard x:Key="TypingDotsStoryboard" RepeatBehavior="Forever">
+
+                <!-- Dot1 animation -->
+                <DoubleAnimationUsingKeyFrames 
+                    Storyboard.TargetName="Dot1"
+                    Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    BeginTime="0:0:0"
+                >
+                    <EasingDoubleKeyFrame  KeyTime="0:0:0" Value="0" />
+                    <EasingDoubleKeyFrame  KeyTime="0:0:0.2" Value="-4" />
+                    <EasingDoubleKeyFrame  KeyTime="0:0:0.4" Value="0" />
+                </DoubleAnimationUsingKeyFrames>
+
+                <!-- Dot2 animation -->
+                <DoubleAnimationUsingKeyFrames 
+                    Storyboard.TargetName="Dot2"
+                    Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    BeginTime="0:0:0.2"
+                >
+                    <EasingDoubleKeyFrame  KeyTime="0:0:0" Value="0" />
+                    <EasingDoubleKeyFrame  KeyTime="0:0:0.2" Value="-4" />
+                    <EasingDoubleKeyFrame  KeyTime="0:0:0.4" Value="0" />
+                </DoubleAnimationUsingKeyFrames>
+
+                <!-- Dot3 animation -->
+                <DoubleAnimationUsingKeyFrames 
+                    Storyboard.TargetName="Dot3"
+                    Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    BeginTime="0:0:0.4"
+                >
+                    <EasingDoubleKeyFrame  KeyTime="0:0:0" Value="0" />
+                    <EasingDoubleKeyFrame  KeyTime="0:0:0.2" Value="-4" />
+                    <EasingDoubleKeyFrame  KeyTime="0:0:0.4" Value="0" />
+                </DoubleAnimationUsingKeyFrames>
+            </Storyboard>
+        </ResourceDictionary>
+
     </UserControl.Resources>
 
     <Grid x:Name="RootGrid" Background="#0B1120" Padding="16">
