@@ -106,7 +106,7 @@ public sealed partial class ChatView : UserControl
             int caretIndex = textBox.SelectionStart;
             string current = textBox.Text ?? string.Empty;
 
-            string toInsert = Environment.NewLine;
+            string toInsert = "\n";
             textBox.Text = current.Insert(caretIndex, toInsert);
 
             // Move caret after the newline
@@ -118,10 +118,12 @@ public sealed partial class ChatView : UserControl
         }
 
         // Plain Enter: send the message via the ViewModel's command
-        if (DataContext is ChatViewModel vm && vm.SendCommand.CanExecute(null))
+        if (DataContext is ChatViewModel vm && vm.SendEnabled && vm.SendCommand.CanExecute(null))
         {
             vm.SendCommand.Execute(null);
             e.Handled = true;
         }
     }
+
+    
 }

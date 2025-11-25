@@ -15,6 +15,7 @@ public class ChatViewModel : INotifyPropertyChanged
     private readonly IChatService _chatService;
     private bool _isBusy;
     private string _inputText = string.Empty;
+    private bool _sendEnabled = false;
 
     public ObservableCollection<ChatMessage> Messages { get; } = new();
 
@@ -28,6 +29,8 @@ public class ChatViewModel : INotifyPropertyChanged
                 _inputText = value;
                 OnPropertyChanged();
                 ((RelayCommand)SendCommand).RaiseCanExecuteChanged();
+
+                SendEnabled = !string.IsNullOrWhiteSpace(_inputText);
             }
         }
     }
@@ -40,6 +43,20 @@ public class ChatViewModel : INotifyPropertyChanged
             if (_isBusy != value)
             {
                 _isBusy = value;
+                OnPropertyChanged();
+                ((RelayCommand)SendCommand).RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool SendEnabled
+    {
+        get => _sendEnabled;
+        private set
+        {
+            if (_sendEnabled != value)
+            {
+                _sendEnabled = value;
                 OnPropertyChanged();
                 ((RelayCommand)SendCommand).RaiseCanExecuteChanged();
             }

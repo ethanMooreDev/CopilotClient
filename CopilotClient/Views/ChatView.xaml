@@ -194,19 +194,22 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <TextBox Grid.Column="0"
-                 Text="{Binding InputText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                 AcceptsReturn="False"
-                 TextWrapping="Wrap"
-                 MinHeight="40"
-                 MaxHeight="100"
-                 PlaceholderText="Ask something..."
-                 Margin="0,0,8,0"
-                 KeyDown="TextBox_KeyDown"
+            <TextBox 
+                Grid.Column="0"
+                Text="{Binding InputText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                AcceptsReturn="False"
+                TextWrapping="Wrap"
+                MinHeight="40"
+                MaxHeight="100"
+                PlaceholderText="Ask something..."
+                Margin="0,0,8,0"
+                KeyDown="TextBox_KeyDown"
             />
 
-            <Button Grid.Column="1"
+            <Button 
+                Grid.Column="1"
                 Content="Send"
+                IsEnabled="{Binding SendEnabled, Mode=OneWay}"
                 Command="{Binding SendCommand}"
                 VerticalAlignment="Bottom"
                 Padding="16,8"
