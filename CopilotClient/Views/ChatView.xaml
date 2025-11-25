@@ -22,6 +22,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Border 
                         Grid.Row="0"
@@ -44,6 +45,12 @@
                         HorizontalAlignment="Right"
                         Margin="4"
                         Text="{Binding CreatedAt, Converter={StaticResource DateToStringConverter} }"
+                    />
+                    <TextBlock
+                        Grid.Row="2"
+                        HorizontalAlignment="Right"
+                        Margin="4,0,4,4"
+                        Text="{Binding StatusString}"
                     />
                 </Grid>
             </StackPanel>

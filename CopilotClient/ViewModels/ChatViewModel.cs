@@ -92,10 +92,13 @@ public class ChatViewModel : INotifyPropertyChanged
         try
         {
             var assistantMessage = await _chatService.SendAsync(Messages.ToList());
+            userMessage.Status = MessageStatus.Sent;
             Messages.Add(assistantMessage);
         }
         catch (Exception ex)
         {
+            userMessage.Status = MessageStatus.Failed;
+            userMessage.ErrorMessage = ex.Message;
             // add a message for error display
         }
         finally

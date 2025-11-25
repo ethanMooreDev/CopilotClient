@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 
 namespace CopilotClient.Models;
 
@@ -16,15 +17,51 @@ public enum MessageStatus
     Failed
 }
 
-public class ChatMessage
+public class ChatMessage : INotifyPropertyChanged
 {
     public Guid ClientId { get; }
     public Guid? ServerId { get; set; }
     public ChatRole Role { get; }
     public string Content { get; }
     public DateTime CreatedAt { get; }
-    public MessageStatus Status { get; set; }
-    public string? ErrorMessage { get; }
+
+    private MessageStatus _status;
+    public MessageStatus Status
+    {
+        get => _status;
+        set
+        {
+            if (_status != value)
+            {
+                _status = value;
+                OnPropertyChanged(nameof(Status));
+                OnPropertyChanged(nameof(StatusString)); // <-- critical
+            }
+        }
+    }
+    public string? _errorMessage;
+    public string? ErrorMessage
+    {
+        get => _errorMessage;
+        set
+        {
+            if (_errorMessage != value)
+            {
+                _errorMessage = value;
+                OnPropertyChanged(nameof(ErrorMessage));
+            }
+        }
+    }
+    public string StatusString
+    {
+        get => Status switch
+        {
+            MessageStatus.Sent => "Sent",
+            MessageStatus.Sending => "Sending",
+            MessageStatus.Failed => "Failed",
+            _ => "Unknown Status"
+        };
+    }
 
     // Constructor with caller-supplied timestamp
     // Main constructor for full control (e.g., when loading history)
@@ -55,4 +92,8 @@ public class ChatMessage
             serverId: null
         );
 
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected void OnPropertyChanged(string propertyName) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }
