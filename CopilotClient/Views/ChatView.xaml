@@ -19,7 +19,7 @@
 
     </UserControl.Resources>
 
-    <Grid x:Name="RootGrid" Background="#0B1120" Padding="0,8,0,8">
+    <Grid x:Name="RootGrid" Background="#0B1120" Padding="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
@@ -27,18 +27,19 @@
         </Grid.RowDefinitions>
 
         <!-- Messages list -->
-        <ScrollViewer Grid.Row="0" x:Name="MessageScrollViewer" Padding="256,0,256,0">
+        <ScrollViewer Grid.Row="0" x:Name="MessageScrollViewer">
             <ItemsControl
                 x:Name="MessagesItemsControl"
                 ItemTemplateSelector="{StaticResource MessageTemplateSelector}"
                 ItemsSource="{Binding Messages}"
+                Width="800"
             >
                 <ItemsControl.ItemTemplate/>
             </ItemsControl>
         </ScrollViewer>
 
         <!-- Input row -->
-        <Grid Grid.Row="2" Margin="0,12,0,0" Padding="256,0,256,0">
+        <Grid Grid.Row="2" Margin="0,12,0,0" Width="800">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
