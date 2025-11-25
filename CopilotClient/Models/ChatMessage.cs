@@ -1,4 +1,6 @@
-﻿namespace CopilotClient.Models;
+﻿using System;
+
+namespace CopilotClient.Models;
 
 public enum ChatRole
 {
@@ -12,10 +14,13 @@ public class ChatMessage
     public ChatRole Role { get; }
     public string Content { get; }
 
-    public ChatMessage(ChatRole role, string content)
+    public DateTime CreatedAt { get; }
+
+    public ChatMessage(ChatRole role, string content, DateTime createdAt)
     {
         Role = role; 
         Content = content;
+        CreatedAt = createdAt;
     }
 
     public bool IsFromUser => Role == ChatRole.User;
