@@ -20,7 +20,7 @@ public sealed partial class ChatView : UserControl
     {
         InitializeComponent();
 
-        RootGrid.SizeChanged += (_, __) => Bindings.Update();
+        //RootGrid.SizeChanged += (_, __) => Bindings.Update();
 
         DataContextChanged += ChatView_DataContextChanged;
     }

@@ -8,18 +8,22 @@ public class MessageTemplateSelector : DataTemplateSelector
 {
     public DataTemplate? UserTemplate { get; set; }
     public DataTemplate? AssistantTemplate { get; set; }
+    public DataTemplate? AssistantTypingTemplate { get; set; }
 
     protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
     {
-        if(item is ChatMessage message)
+        if (item is ChatMessage message && container is FrameworkElement)
         {
-            return message.Role switch
-            {
-                ChatRole.User => UserTemplate ?? base.SelectTemplateCore(item, container),
-                ChatRole.Assistant => AssistantTemplate ?? base.SelectTemplateCore(item, container),
+            if (message.Role == ChatRole.User)
+                return UserTemplate!;
 
-                _ => base.SelectTemplateCore(item, container)
-            };
+            if (message.Role == ChatRole.Assistant)
+            {
+                if (message.Status == MessageStatus.Typing && string.IsNullOrEmpty(message.Content))
+                    return AssistantTypingTemplate!;
+
+                return AssistantTemplate!;
+            }
         }
 
         return base.SelectTemplateCore(item, container);

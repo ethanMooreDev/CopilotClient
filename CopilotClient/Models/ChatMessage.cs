@@ -13,6 +13,8 @@ public enum ChatRole
 public enum MessageStatus
 {
     Sending,
+    Typing,
+    Streaming,
     Sent,
     Failed
 }
@@ -22,8 +24,23 @@ public class ChatMessage : INotifyPropertyChanged
     public Guid ClientId { get; }
     public Guid? ServerId { get; set; }
     public ChatRole Role { get; }
-    public string Content { get; }
+    
     public DateTime CreatedAt { get; }
+
+    private string _content;
+
+    public string Content
+    {
+        get => _content;
+        set
+        {
+            if (_content != value)
+            {
+                _content = value;
+                OnPropertyChanged(nameof(Content));
+            }
+        }
+    }
 
     private MessageStatus _status;
     public MessageStatus Status
@@ -35,7 +52,7 @@ public class ChatMessage : INotifyPropertyChanged
             {
                 _status = value;
                 OnPropertyChanged(nameof(Status));
-                OnPropertyChanged(nameof(StatusString)); // <-- critical
+                OnPropertyChanged(nameof(StatusString));
             }
         }
     }
@@ -56,8 +73,10 @@ public class ChatMessage : INotifyPropertyChanged
     {
         get => Status switch
         {
-            MessageStatus.Sent => "Sent",
             MessageStatus.Sending => "Sending",
+            MessageStatus.Typing => "Typing",
+            MessageStatus.Streaming => "Streaming",
+            MessageStatus.Sent => "Sent",
             MessageStatus.Failed => "Failed",
             _ => "Unknown Status"
         };

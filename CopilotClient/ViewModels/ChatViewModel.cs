@@ -88,17 +88,29 @@ public class ChatViewModel : INotifyPropertyChanged
         var userMessage = ChatMessage.CreateNewUserMessage(text);
         Messages.Add(userMessage);
 
+        var assistantMessage = new ChatMessage(
+            clientId: Guid.NewGuid(),
+            role: ChatRole.Assistant,
+            content: string.Empty,
+            status: MessageStatus.Typing,
+            createdAt: DateTime.Now
+        );
+
+        Messages.Add(assistantMessage);
+
         IsBusy = true;
         try
         {
-            var assistantMessage = await _chatService.SendAsync(Messages.ToList());
+            var replyMessage = await _chatService.SendAsync(Messages.ToList());
             userMessage.Status = MessageStatus.Sent;
-            Messages.Add(assistantMessage);
+            Messages.Remove(assistantMessage);
+            Messages.Add(replyMessage);
         }
         catch (Exception ex)
         {
-            userMessage.Status = MessageStatus.Failed;
-            userMessage.ErrorMessage = ex.Message;
+            assistantMessage.Status = MessageStatus.Failed;
+            assistantMessage.ErrorMessage = ex.Message;
+            assistantMessage.Content = ex.Message;
             // add a message for error display
         }
         finally
