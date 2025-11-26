@@ -9,6 +9,7 @@
     mc:Ignorable="d"
     xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
     xmlns:selectors="using:CopilotClient.Selectors"
+    x:Name="RootControl"
 >
     <UserControl.Resources>
         <ResourceDictionary>
@@ -19,88 +20,147 @@
 
     </UserControl.Resources>
 
-    <Grid x:Name="RootGrid" Background="#0B1120" Padding="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-
-        <!-- Header -->
-        <Grid Grid.Row="0" Margin="0,0,0,8" Width="800">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-
-            <!-- Title + Subtitle -->
-            <StackPanel Orientation="Vertical" Grid.Column="0">
+    <Grid Background="#0B1120" Padding="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <!-- CONVERSATION SIDEBAR -->
+        <Grid 
+            Grid.Column="0"
+            Background="#020617"
+            Padding="8,16,8,16"
+        >
+            <StackPanel>
                 <TextBlock 
-                    Text="{Binding Title}"
-                    FontSize="20"
+                    Text="Conversations"
+                    FontSize="14"
                     FontWeight="SemiBold"
-                    Foreground="White"
+                    Foreground="#E5E7EB"
+                    Margin="4,0,0,8"
                 />
-            </StackPanel>
-
-            <!-- Right-side actions -->
-            <StackPanel 
-                Grid.Column="1"
-                Orientation="Horizontal"
-                Spacing="8"
-                VerticalAlignment="Center"
-            >
-                <Button Command="{Binding OpenSettingsCommand}">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                        <SymbolIcon Symbol="Setting" />
-                        <TextBlock Text="Settings" />
-                    </StackPanel>
-                </Button>
+                <ListView 
+                    ItemsSource="{Binding Conversations}"
+                    SelectedItem="{Binding SelectedConversation, Mode=TwoWay}"
+                    IsItemClickEnabled="False"
+                    BorderThickness="0"
+                    Background="Transparent"
+                    Margin="0,8,0,0"
+                >
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="4,4,4,4">
+                                <TextBlock 
+                                    Text="{Binding Title}"
+                                    TextTrimming="CharacterEllipsis"
+                                    FontSize="13"
+                                    Foreground="White"
+                                />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
             </StackPanel>
         </Grid>
+        <!-- CURRENT CONVERSATION -->
+        <Grid Grid.Column="1">
+            <Grid.DataContext>
+                <Binding Path="SelectedConversation" />
+            </Grid.DataContext>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-        <Rectangle Grid.Row="1" Height="1" Width="800" Fill="#1F2937" Margin="0,8,0,8" />
+            <!-- Header -->
+            <Grid Grid.Row="0" Margin="0,0,0,8" Width="800">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-        <!-- Messages list -->
-        <ScrollViewer Grid.Row="2" x:Name="MessageScrollViewer">
-            <ItemsControl
-                x:Name="MessagesItemsControl"
-                ItemTemplateSelector="{StaticResource MessageTemplateSelector}"
-                ItemsSource="{Binding Messages}"
-                Width="800"
-            >
-                <ItemsControl.ItemTemplate/>
-            </ItemsControl>
-        </ScrollViewer>
+                <!-- Title + Subtitle -->
+                <StackPanel Orientation="Vertical" Grid.Column="0">
+                    <TextBlock 
+                        Text="{Binding Title}"
+                        FontSize="20"
+                        FontWeight="SemiBold"
+                        Foreground="White"
+                    />
+                </StackPanel>
 
-        <!-- Input row -->
-        <Grid Grid.Row="3" Margin="0,12,0,0" Width="800">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+                <!-- Right-side actions -->
+                <StackPanel 
+                    Grid.Column="1"
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    VerticalAlignment="Center"
+                >
+                    <Button>
+                        <Button.Command>
+                            <Binding
+                                Path="DataContext.NewConversationCommand"
+                                ElementName="RootControl"
+                            />
+                        </Button.Command>
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <SymbolIcon Symbol="Add" />
+                            <TextBlock Text="New chat" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding OpenSettingsCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <SymbolIcon Symbol="Setting" />
+                            <TextBlock Text="Settings" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
 
-            <TextBox 
-                Grid.Column="0"
-                Text="{Binding InputText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                AcceptsReturn="False"
-                TextWrapping="Wrap"
-                MinHeight="40"
-                MaxHeight="100"
-                PlaceholderText="Ask something..."
-                Margin="0,0,8,0"
-                KeyDown="TextBox_KeyDown"
-            />
+            <Rectangle Grid.Row="1" Height="1" Width="800" Fill="#1F2937" Margin="0,8,0,8" />
 
-            <Button 
-                Grid.Column="1"
-                Content="Send"
-                IsEnabled="{Binding SendEnabled, Mode=OneWay}"
-                Command="{Binding SendCommand}"
-                VerticalAlignment="Bottom"
-                Padding="16,8"
-            />
+            <!-- Messages list -->
+            <ScrollViewer Grid.Row="2" x:Name="MessageScrollViewer">
+                <ItemsControl
+                    x:Name="MessagesItemsControl"
+                    ItemTemplateSelector="{StaticResource MessageTemplateSelector}"
+                    ItemsSource="{Binding Messages}"
+                    Width="800"
+                >
+                    <ItemsControl.ItemTemplate/>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Input row -->
+            <Grid Grid.Row="3" Margin="0,12,0,0" Width="800">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBox 
+                    Grid.Column="0"
+                    Text="{Binding InputText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    AcceptsReturn="False"
+                    TextWrapping="Wrap"
+                    MinHeight="40"
+                    MaxHeight="100"
+                    PlaceholderText="Ask something..."
+                    Margin="0,0,8,0"
+                    KeyDown="TextBox_KeyDown"
+                />
+
+                <Button 
+                    Grid.Column="1"
+                    Content="Send"
+                    IsEnabled="{Binding SendEnabled, Mode=OneWay}"
+                    Command="{Binding SendCommand}"
+                    VerticalAlignment="Bottom"
+                    Padding="16,8"
+                />
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>

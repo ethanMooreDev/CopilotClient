@@ -10,7 +10,7 @@ using System.Windows.Input;
 
 namespace CopilotClient.ViewModels;
 
-public class ChatViewModel : INotifyPropertyChanged
+public class ChatViewModel : ViewModelBase
 {
     private readonly IChatService _chatService;
     private bool _isBusy;
@@ -178,10 +178,4 @@ public class ChatViewModel : INotifyPropertyChanged
         _conversation.Messages.Remove(m);
         _conversation.LastUpdatedAt = DateTime.UtcNow;
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    private void OnPropertyChanged([CallerMemberName] string? propertyName = null) => 
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
 }

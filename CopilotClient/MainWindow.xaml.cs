@@ -10,6 +10,6 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
 
-        WindowChatView.DataContext = new ChatViewModel(new MockChatService());
+        WindowChatView.DataContext = new ConversationManagerViewModel(new MockChatService());
     }
 }

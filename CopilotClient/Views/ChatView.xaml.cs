@@ -20,8 +20,6 @@ public sealed partial class ChatView : UserControl
     {
         InitializeComponent();
 
-        //RootGrid.SizeChanged += (_, __) => Bindings.Update();
-
         DataContextChanged += ChatView_DataContextChanged;
     }
 
@@ -35,15 +33,18 @@ public sealed partial class ChatView : UserControl
 
     private void ChatView_DataContextChanged(Microsoft.UI.Xaml.FrameworkElement sender, Microsoft.UI.Xaml.DataContextChangedEventArgs args)
     {
-        if(args.NewValue is ChatViewModel vm)
+        if (args.NewValue is ConversationManagerViewModel vm)
         {
-            if(_chatViewModel != null)
+            if (_chatViewModel != null)
             {
                 _chatViewModel.Messages.CollectionChanged -= Messages_CollectionChanged;
             }
 
-            vm.Messages.CollectionChanged += Messages_CollectionChanged;
-            _chatViewModel = vm;
+            if(vm.SelectedConversation is ChatViewModel chatViewModel)
+            {
+                chatViewModel.Messages.CollectionChanged += Messages_CollectionChanged;
+                _chatViewModel = chatViewModel;
+            }
         }
     }
 
@@ -137,9 +138,9 @@ public sealed partial class ChatView : UserControl
         }
 
         // Plain Enter: send the message via the ViewModel's command
-        if (DataContext is ChatViewModel vm && vm.SendEnabled && vm.SendCommand.CanExecute(null))
+        if (_chatViewModel != null && _chatViewModel.SendEnabled && _chatViewModel.SendCommand.CanExecute(null))
         {
-            vm.SendCommand.Execute(null);
+            _chatViewModel.SendCommand.Execute(null);
             e.Handled = true;
         }
     }
