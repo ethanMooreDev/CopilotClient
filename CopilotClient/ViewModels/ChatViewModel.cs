@@ -97,6 +97,8 @@ public class ChatViewModel : ViewModelBase
 
     public ICommand OpenSettingsCommand { get; }
 
+    public Action<Conversation>? PersistRequested { get; set; }
+
     public ChatViewModel(IChatService chatService) : this(chatService, new Conversation())
     {
     }
@@ -169,6 +171,7 @@ public class ChatViewModel : ViewModelBase
         }
         finally
         {
+            PersistRequested?.Invoke(_conversation);
             IsBusy = false;
         }
     }
