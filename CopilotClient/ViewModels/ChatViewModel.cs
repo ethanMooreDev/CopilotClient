@@ -80,6 +80,19 @@ public class ChatViewModel : ViewModelBase
         }
     }
 
+    public ConversationMode Mode
+    {
+        get => _conversation.Mode;
+        set
+        {
+            if(_conversation.Mode != value)
+            {
+                _conversation.Mode = value;
+                OnPropertyChanged(nameof(Mode));
+            }
+        }
+    }
+
     public ICommand SendCommand { get; }
 
     public ICommand OpenSettingsCommand { get; }
@@ -178,4 +191,6 @@ public class ChatViewModel : ViewModelBase
         _conversation.Messages.Remove(m);
         _conversation.LastUpdatedAt = DateTime.UtcNow;
     }
+
+    public Array AvailableModes => Enum.GetValues(typeof(ConversationMode));
 }

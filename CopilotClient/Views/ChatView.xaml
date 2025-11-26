@@ -56,6 +56,12 @@
                                     FontSize="13"
                                     Foreground="White"
                                 />
+                                <TextBlock
+                                    Text="{Binding Mode}"
+                                    FontSize="11"
+                                    Foreground="#9CA3AF"
+                                    Margin="0,2,0,0"
+                                />
                             </StackPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -102,6 +108,15 @@
                     Spacing="8"
                     VerticalAlignment="Center"
                 >
+                    <!-- Mode selector -->
+                    <ComboBox
+                        Width="140"
+                        ItemsSource="{Binding AvailableModes}"
+                        SelectedItem="{Binding Mode, Mode=TwoWay}"
+                    >
+                        
+                    </ComboBox>
+                    <!-- New Chat Button -->
                     <Button>
                         <Button.Command>
                             <Binding
@@ -114,6 +129,7 @@
                             <TextBlock Text="New chat" />
                         </StackPanel>
                     </Button>
+                    <!-- Settings Button -->
                     <Button Command="{Binding OpenSettingsCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <SymbolIcon Symbol="Setting" />
