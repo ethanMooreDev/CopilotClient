@@ -63,7 +63,11 @@
             </StackPanel>
         </Grid>
         <!-- CURRENT CONVERSATION -->
-        <Grid Grid.Column="1">
+        <Grid
+            Grid.Column="1"
+            x:Name="ChatArea"
+            DataContextChanged="ChatArea_DataContextChanged"
+        >
             <Grid.DataContext>
                 <Binding Path="SelectedConversation" />
             </Grid.DataContext>

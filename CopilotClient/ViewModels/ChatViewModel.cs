@@ -30,7 +30,7 @@ public class ChatViewModel : ViewModelBase
             if(_inputText != value)
             {
                 _inputText = value;
-                OnPropertyChanged();
+                OnPropertyChanged(nameof(InputText));
                 ((RelayCommand)SendCommand).RaiseCanExecuteChanged();
 
                 SendEnabled = !string.IsNullOrWhiteSpace(_inputText);
@@ -46,7 +46,7 @@ public class ChatViewModel : ViewModelBase
             if (_isBusy != value)
             {
                 _isBusy = value;
-                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsBusy));
                 ((RelayCommand)SendCommand).RaiseCanExecuteChanged();
             }
         }
@@ -60,7 +60,7 @@ public class ChatViewModel : ViewModelBase
             if (_sendEnabled != value)
             {
                 _sendEnabled = value;
-                OnPropertyChanged();
+                OnPropertyChanged(nameof(SendEnabled));
                 ((RelayCommand)SendCommand).RaiseCanExecuteChanged();
             }
         }
@@ -75,7 +75,7 @@ public class ChatViewModel : ViewModelBase
             {
                 _title = value;
                 _conversation.Title = value;
-                OnPropertyChanged();
+                OnPropertyChanged(nameof(Title));
             }
         }
     }

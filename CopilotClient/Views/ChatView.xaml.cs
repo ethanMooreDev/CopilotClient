@@ -23,14 +23,6 @@ public sealed partial class ChatView : UserControl
         DataContextChanged += ChatView_DataContextChanged;
     }
 
-    private void TypingIndicator_Loaded(object sender, RoutedEventArgs e)
-    {
-        if (Resources["TypingDotsStoryboard"] is Storyboard storyboard)
-        {
-            storyboard.Begin();
-        }
-    }
-
     private void ChatView_DataContextChanged(Microsoft.UI.Xaml.FrameworkElement sender, Microsoft.UI.Xaml.DataContextChangedEventArgs args)
     {
         if (args.NewValue is ConversationManagerViewModel vm)
@@ -145,5 +137,18 @@ public sealed partial class ChatView : UserControl
         }
     }
 
-    
+    private void ChatArea_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
+    {
+        if (args.NewValue is ChatViewModel vm)
+        {
+            if (_chatViewModel != null)
+            {
+                _chatViewModel.Messages.CollectionChanged -= Messages_CollectionChanged;
+            }
+
+            vm.Messages.CollectionChanged += Messages_CollectionChanged;
+            _chatViewModel = vm;
+            
+        }
+    }
 }

@@ -20,7 +20,7 @@ public class ConversationManagerViewModel : ViewModelBase
             if (_selectedConversation != value)
             {
                 _selectedConversation = value;
-                OnPropertyChanged();
+                OnPropertyChanged(nameof(SelectedConversation));
             }
         }
     }
