@@ -151,4 +151,22 @@ public sealed partial class ChatView : UserControl
             
         }
     }
+
+    private void Grid_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (sender is Grid root && root.FindName("ListItemOptionButton") is Button btn)
+        {
+            btn.Visibility = Visibility.Visible;
+        }
+
+        
+    }
+
+    private void Grid_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (sender is Grid root && root.FindName("ListItemOptionButton") is Button btn)
+        {
+            btn.Visibility = Visibility.Collapsed;
+        }
+    }
 }
