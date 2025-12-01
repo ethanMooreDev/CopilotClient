@@ -79,7 +79,22 @@
                                     Visibility="Collapsed"
                                     Padding="4"
                                     FontSize="8"
+                                    Click="ListItemOptionButton_Click"
                                 >
+                                    <FlyoutBase.AttachedFlyout>
+                                        <MenuFlyout Placement="RightEdgeAlignedTop" >
+                                            <MenuFlyoutItem Text="Rename">
+                                                <MenuFlyoutItem.Icon>
+                                                    <SymbolIcon Symbol="Rename" />
+                                                </MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
+                                            <MenuFlyoutItem Text="Delete">
+                                                <MenuFlyoutItem.Icon>
+                                                    <SymbolIcon Symbol="Delete" />
+                                                </MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
+                                        </MenuFlyout>
+                                    </FlyoutBase.AttachedFlyout>
                                     <Viewbox MaxHeight="16" MaxWidth="16" >
                                         <SymbolIcon Symbol="More" />
                                     </Viewbox>

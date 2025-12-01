@@ -2,6 +2,7 @@ using CopilotClient.ViewModels;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Collections.Specialized;
@@ -167,6 +168,14 @@ public sealed partial class ChatView : UserControl
         if (sender is Grid root && root.FindName("ListItemOptionButton") is Button btn)
         {
             btn.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void ListItemOptionButton_Click(object sender, RoutedEventArgs e)
+    {
+        if(sender is Button element && element.DataContext is ChatViewModel elementVm)
+        {
+            FlyoutBase.ShowAttachedFlyout(element);
         }
     }
 }
