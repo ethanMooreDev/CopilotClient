@@ -76,6 +76,9 @@ public class ChatViewModel : ViewModelBase
                 _title = value;
                 _conversation.Title = value;
                 OnPropertyChanged(nameof(Title));
+
+                _conversation.LastUpdatedAt = DateTime.Now;
+                PersistRequested?.Invoke(_conversation);
             }
         }
     }
@@ -89,6 +92,9 @@ public class ChatViewModel : ViewModelBase
             {
                 _conversation.Mode = value;
                 OnPropertyChanged(nameof(Mode));
+
+                _conversation.LastUpdatedAt = DateTime.Now;
+                PersistRequested?.Invoke(_conversation);
             }
         }
     }
