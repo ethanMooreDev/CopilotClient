@@ -9,6 +9,7 @@
     mc:Ignorable="d"
     xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
     xmlns:selectors="using:CopilotClient.Selectors"
+    xmlns:converters="using:CopilotClient.Converters"
     x:Name="RootControl"
 >
     <UserControl.Resources>
@@ -16,6 +17,8 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="ms-appx:///Resources/MessageTemplates.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+            <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
         </ResourceDictionary>
 
     </UserControl.Resources>
@@ -60,12 +63,32 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Margin="4,4,4,4">
-                                    <TextBlock 
-                                        Text="{Binding Title}"
-                                        TextTrimming="CharacterEllipsis"
-                                        FontSize="13"
-                                        Foreground="White"
-                                    />
+                                    <Grid>
+                                        <!-- Normal view -->
+                                        <TextBlock Text="{Binding Title}">
+                                            <TextBlock.Visibility>
+                                                <Binding 
+                                                    Path="IsEditingTitle"
+                                                    Converter="{StaticResource InverseBooleanToVisibilityConverter}"
+                                                />
+                                            </TextBlock.Visibility>
+                                        </TextBlock>
+
+                                        <!-- Edit view -->
+                                        <TextBox
+                                            Text="{Binding Title, Mode=TwoWay}"
+                                            MinWidth="150"
+                                            KeyDown="TitleTextBox_KeyDown"
+                                            LostFocus="TitleTextBox_LostFocus"
+                                        >     
+                                            <TextBox.Visibility>
+                                                <Binding 
+                                                    Path="IsEditingTitle"
+                                                    Converter="{StaticResource BooleanToVisibilityConverter}"
+                                                />
+                                            </TextBox.Visibility>
+                                        </TextBox>
+                                    </Grid>
                                     <TextBlock
                                         Text="{Binding Mode}"
                                         FontSize="11"
@@ -83,12 +106,12 @@
                                 >
                                     <FlyoutBase.AttachedFlyout>
                                         <MenuFlyout Placement="RightEdgeAlignedTop" >
-                                            <MenuFlyoutItem Text="Rename">
+                                            <MenuFlyoutItem Text="Rename" Click="MenuFlyoutItemRename_Click" >
                                                 <MenuFlyoutItem.Icon>
                                                     <SymbolIcon Symbol="Rename" />
                                                 </MenuFlyoutItem.Icon>
                                             </MenuFlyoutItem>
-                                            <MenuFlyoutItem Text="Delete">
+                                            <MenuFlyoutItem Text="Delete" Click="MenuFlyoutItemDelete_Click" >
                                                 <MenuFlyoutItem.Icon>
                                                     <SymbolIcon Symbol="Delete" />
                                                 </MenuFlyoutItem.Icon>

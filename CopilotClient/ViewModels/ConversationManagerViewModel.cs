@@ -30,6 +30,7 @@ public class ConversationManagerViewModel : ViewModelBase
     }
 
     public ICommand NewConversationCommand { get; }
+    public ICommand DeleteConversationCommand { get; }
 
     public ConversationManagerViewModel(IChatService chatService, IConversationStore? store = null)
     {
@@ -43,6 +44,11 @@ public class ConversationManagerViewModel : ViewModelBase
         SelectedConversation = first;
 
         NewConversationCommand = new RelayCommand(_ => NewConversation());
+
+        DeleteConversationCommand = new RelayCommand(
+            async param => await DeleteConversationAsync(param as ChatViewModel),
+            param => param is ChatViewModel vm && Conversations.Contains(vm)
+        );
     }
 
     private ChatViewModel CreateNewConversation()
@@ -103,5 +109,48 @@ public class ConversationManagerViewModel : ViewModelBase
         }
 
         SelectedConversation ??= Conversations.FirstOrDefault();
+    }
+
+    public async Task DeleteConversationAsync(ChatViewModel? vm)
+    {
+        if (vm is null)
+            return;
+
+        var index = Conversations.IndexOf(vm);
+
+        Conversations.Remove(vm);
+
+        if (Conversations.Count == 1 && _store is not null)
+        {
+            await _store.DeleteConversationAsync(vm.ConversationId);
+
+            return;
+        }
+
+        if (SelectedConversation == vm)
+        {
+            if (Conversations.Count == 0)
+            {
+                SelectedConversation = null;
+            }
+            else if (index < Conversations.Count)
+            {
+                SelectedConversation = Conversations[index];
+            }
+            else
+            {
+                SelectedConversation = Conversations[Conversations.Count - 1];
+            }
+        }
+
+        if (_store is not null)
+        {
+            await _store.DeleteConversationAsync(vm.ConversationId);
+        }
+    }
+
+    public async Task DeleteSelectedConversationAsync()
+    {
+        await DeleteConversationAsync(SelectedConversation);
     }
 }

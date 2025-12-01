@@ -178,4 +178,40 @@ public sealed partial class ChatView : UserControl
             FlyoutBase.ShowAttachedFlyout(element);
         }
     }
+
+    private void MenuFlyoutItemDelete_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is ChatViewModel elementVm)
+        {
+            ((ConversationManagerViewModel) DataContext).DeleteConversationCommand.Execute(elementVm);
+        }
+    }
+
+    private void MenuFlyoutItemRename_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is ChatViewModel elementVm)
+        {
+            elementVm.BeginEditTitleCommand.Execute(null);
+        }
+    }
+
+    private void TitleTextBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter && sender is FrameworkElement element)
+        {
+            if (element.DataContext is ChatViewModel vm)
+            {
+                vm.CommitEditTitle();
+            }
+            e.Handled = true;
+        }
+    }
+
+    private void TitleTextBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is ChatViewModel vm)
+        {
+            vm.CommitEditTitle();
+        }
+    }
 }

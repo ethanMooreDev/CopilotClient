@@ -18,7 +18,11 @@ public class ChatViewModel : ViewModelBase
     private string _title;
     private bool _sendEnabled = false;
 
+    private bool _isEditingTitle;
+
     private readonly Conversation _conversation;
+
+    public Guid ConversationId { get =>  _conversation.Id; }
 
     public ObservableCollection<ChatMessage> Messages { get; }
 
@@ -99,9 +103,23 @@ public class ChatViewModel : ViewModelBase
         }
     }
 
-    public ICommand SendCommand { get; }
+    public bool IsEditingTitle
+    {
+        get => _isEditingTitle;
+        set
+        {
+            if (_isEditingTitle != value)
+            {
+                _isEditingTitle = value;
+                OnPropertyChanged(nameof(IsEditingTitle));
+            }
+        }
+    }
 
+    public ICommand SendCommand { get; }
     public ICommand OpenSettingsCommand { get; }
+    public ICommand BeginEditTitleCommand { get; }
+    public ICommand CommitEditTitleCommand { get; }
 
     public Action<Conversation>? PersistRequested { get; set; }
 
@@ -125,6 +143,9 @@ public class ChatViewModel : ViewModelBase
         );
 
         OpenSettingsCommand = new RelayCommand(_ => OpenSettings());
+
+        BeginEditTitleCommand = new RelayCommand(_ => BeginEditTitle());
+        CommitEditTitleCommand = new RelayCommand(_ => CommitEditTitle());
     }
 
     private async Task SendAsync()
@@ -187,18 +208,29 @@ public class ChatViewModel : ViewModelBase
         
     }
 
-    private void AddMessage(ChatMessage m)
+    public void AddMessage(ChatMessage m)
     {
         Messages.Add(m);
         _conversation.Messages.Add(m);
         _conversation.LastUpdatedAt = DateTime.UtcNow;
     }
 
-    private void RemoveMessage(ChatMessage m)
+    public void RemoveMessage(ChatMessage m)
     {
         Messages.Remove(m);
         _conversation.Messages.Remove(m);
         _conversation.LastUpdatedAt = DateTime.UtcNow;
+    }
+
+    public void BeginEditTitle()
+    {
+        IsEditingTitle = true;
+    }
+
+    public void CommitEditTitle()
+    {
+        // Title is already updated via binding when the TextBox loses focus or Enter is pressed
+        IsEditingTitle = false;
     }
 
     public Array AvailableModes => Enum.GetValues(typeof(ConversationMode));
