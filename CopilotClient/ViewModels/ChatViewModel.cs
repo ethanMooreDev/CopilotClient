@@ -162,16 +162,14 @@ public class ChatViewModel : ViewModelBase
         var userMessage = ChatMessage.CreateNewUserMessage(text);
         AddMessage(userMessage);
 
-        if(Messages.Count == 1)
+        if (Messages.Count == 1 && (string.IsNullOrWhiteSpace(Title) || Title == "New conversation"))
         {
-            if (!string.IsNullOrWhiteSpace(Title))
-            {
-                Title = userMessage.Content.Length > 40
-                    ? $"{userMessage.Content[..40]}..."
-                    : userMessage.Content;
-            }
-                
+            Title = userMessage.Content.Length > 40
+                ? $"{userMessage.Content[..40]}..."
+                : userMessage.Content;
         }
+
+        PersistRequested?.Invoke(_conversation);
 
         var assistantMessage = new ChatMessage(
             clientId: Guid.NewGuid(),
@@ -183,26 +181,32 @@ public class ChatViewModel : ViewModelBase
 
         AddMessage(assistantMessage);
 
+        var replyMessage = default(ChatMessage);
+
         IsBusy = true;
         try
         {
-            var replyMessage = await _chatService.SendAsync(BuildServiceConversation());
+            replyMessage = await _chatService.SendAsync(BuildServiceConversation());
             userMessage.Status = MessageStatus.Sent;
-            RemoveMessage(assistantMessage);
-            AddMessage(replyMessage);
         }
-        catch (Exception ex)
+        catch (OperationCanceledException)
         {
-            assistantMessage.Status = MessageStatus.Failed;
-            assistantMessage.ErrorMessage = ex.Message;
-            assistantMessage.Content = ex.Message;
-            OnPropertyChanged(nameof(Messages));
+            RemoveMessage(assistantMessage);
+            IsBusy = false;
+            return;
         }
         finally
         {
-            PersistRequested?.Invoke(_conversation);
+            RemoveMessage(assistantMessage);
             IsBusy = false;
         }
+
+        if (replyMessage is not null)
+        {
+            AddMessage(replyMessage);
+        }
+
+        PersistRequested?.Invoke(_conversation);
     }
 
     private ServiceConversation BuildServiceConversation()
