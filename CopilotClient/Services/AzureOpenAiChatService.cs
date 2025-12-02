@@ -15,6 +15,8 @@ namespace CopilotClient.Services;
 public sealed class AzureOpenAiChatService : IChatService
 {
     private readonly AzureOpenAIClient _client;
+    private readonly ChatClient _chatClient;
+
     private readonly AzureOpenAiOptions _options;
 
     public AzureOpenAiChatService(AzureOpenAiOptions options)
@@ -32,65 +34,79 @@ public sealed class AzureOpenAiChatService : IChatService
         var credential = new AzureKeyCredential(options.ApiKey);
 
         _client = new AzureOpenAIClient(endpoint, credential);
+        _chatClient = _client.GetChatClient(options.DeploymentName);
 
         _options = options;
     }
 
-    public async Task<CopilotClient.Models.ChatMessage> SendAsync(
-        ServiceConversation request,
-        CancellationToken cancellationToken = default)
+    public async Task<CopilotClient.Models.ChatMessage> SendAsync(ServiceConversation request, CancellationToken cancellationToken = default)
     {
-        // 1. Build the SDK chat messages
-        var chatMessages = BuildChatMessages(request);
-
-        // 2. Call Azure OpenAI
-        var chatRequestOptions = new ChatCompletionOptions();
-
-        // You can tweak these later
-        chatRequestOptions.Temperature = 0.3f;
-        chatRequestOptions.MaxOutputTokenCount = 512;
-
-        // NOTE: this call shape may vary slightly by SDK version;
-        // in modern SDKs you typically pass deployment name and options.
-        ChatCompletion response = 
-            await _client
-                .GetChatClient(_options.DeploymentName)
-                .CompleteChatAsync(
-                    chatMessages,
-                    chatRequestOptions,
-                    cancellationToken
-                );
-
-        var sb = new StringBuilder();
-        foreach (var part in response.Content)
+        try
         {
-            if (part.Kind == ChatMessageContentPartKind.Text && part.Text is not null)
+            var chatMessages = BuildChatMessages(request);
+
+            var chatRequestOptions = new ChatCompletionOptions
             {
-                sb.Append(part.Text);
+                Temperature = request.Mode == CopilotClient.Models.ConversationMode.Explain ? 0.4f : 0.3f,
+                MaxOutputTokenCount = request.Mode == CopilotClient.Models.ConversationMode.Explain ? 1024 : 512
+            };
+
+            ChatCompletion response = await _chatClient.CompleteChatAsync(
+                chatMessages,
+                chatRequestOptions,
+                cancellationToken
+            );
+
+            var sb = new StringBuilder();
+            foreach (var part in response.Content)
+            {
+                if (part.Kind == ChatMessageContentPartKind.Text && part.Text is not null)
+                {
+                    sb.Append(part.Text);
+                }
             }
-        }
 
-        var assistantMessage = sb.ToString();
+            var assistantMessage = sb.ToString();
 
-        if (assistantMessage is null || string.IsNullOrWhiteSpace(assistantMessage))
-        {
-            // Fall back to a failed message
+            if (string.IsNullOrWhiteSpace(assistantMessage))
+            {
+                return BuildFailedMessage("I didn't receive a valid response from the model.");
+            }
+
             return new CopilotClient.Models.ChatMessage(
                 clientId: Guid.NewGuid(),
                 role: CopilotClient.Models.ChatRole.Assistant,
-                content: "I didn't receive a valid response from the model.",
+                content: assistantMessage,
                 createdAt: DateTime.UtcNow,
-                status: CopilotClient.Models.MessageStatus.Failed
+                status: CopilotClient.Models.MessageStatus.Sent
             );
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return BuildFailedMessage(
+            "An error occurred while calling Azure OpenAI.",
+            ex.Message);
+        }
+    }
 
-        return new CopilotClient.Models.ChatMessage(
+    private static CopilotClient.Models.ChatMessage BuildFailedMessage(string message, string? details = null)
+    {
+        var full = details is null ? message : $"{message}\n\nDetails: {details}";
+
+        var msg = new CopilotClient.Models.ChatMessage(
             clientId: Guid.NewGuid(),
             role: CopilotClient.Models.ChatRole.Assistant,
-            content: assistantMessage,
+            content: full,
             createdAt: DateTime.UtcNow,
-            status: CopilotClient.Models.MessageStatus.Sent
+            status: CopilotClient.Models.MessageStatus.Failed
         );
+
+        msg.ErrorMessage = full;
+        return msg;
     }
 
     private static System.Collections.Generic.IEnumerable<ChatMessage> BuildChatMessages(ServiceConversation request)
@@ -115,7 +131,6 @@ public sealed class AzureOpenAiChatService : IChatService
                     break;
 
                 case CopilotClient.Models.ChatRole.System:
-                    // If you ever persist system messages, handle them here
                     yield return new SystemChatMessage(m.Content);
                     break;
 
