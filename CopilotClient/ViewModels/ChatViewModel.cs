@@ -196,6 +196,7 @@ public class ChatViewModel : ViewModelBase
             assistantMessage.Status = MessageStatus.Failed;
             assistantMessage.ErrorMessage = ex.Message;
             assistantMessage.Content = ex.Message;
+            OnPropertyChanged(nameof(Messages));
         }
         finally
         {
