@@ -13,41 +13,29 @@ public class MockChatService : IChatService
     public async Task<ChatMessage> SendAsync(ServiceConversation request, CancellationToken cancellationToken = default)
     {
         var messages = request.Messages.ToList();
-
-        // Last user message
         var lastUser = messages.LastOrDefault(m => m.Role == ChatRole.User);
         var userContent = lastUser?.Content ?? "(no user message)";
 
-        await Task.Delay(500, cancellationToken); // simulate latency
+        await Task.Delay(500, cancellationToken);
+
+        var instruction = request.SystemInstruction ?? "(no instruction)";
 
         string content = request.Mode switch
         {
             ConversationMode.Explain =>
-                "Mode: Explain\n\n" +
-                "Here's an explanation of your request/code:\n" +
-                userContent,
+                $"[Explain Mode]\n{instruction}\n\nUser said:\n{userContent}",
 
             ConversationMode.Refactor =>
-                "Mode: Refactor\n\n" +
-                "Here's how I might refactor this (conceptually):\n" +
-                userContent,
+                $"[Refactor Mode]\n{instruction}\n\nOriginal code:\n{userContent}",
 
             ConversationMode.BugHunt =>
-                "Mode: BugHunt\n\n" +
-                "Potential issues / edge cases:\n" +
-                "- (placeholder issue #1)\n" +
-                "- (placeholder issue #2)\n\nOriginal:\n" +
-                userContent,
+                $"[BugHunt Mode]\n{instruction}\n\nAnalyzing for issues in:\n{userContent}",
 
             ConversationMode.Optimize =>
-                "Mode: Optimize\n\n" +
-                "Optimization ideas:\n" +
-                "- (placeholder optimization #1)\n\nOriginal:\n" +
-                userContent,
+                $"[Optimize Mode]\n{instruction}\n\nLooking for optimizations in:\n{userContent}",
 
             _ =>
-                "Mode: General\n\n" +
-                userContent
+                $"[General Mode]\n{instruction}\n\n{userContent}"
         };
 
         return new ChatMessage(

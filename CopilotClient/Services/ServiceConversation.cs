@@ -6,5 +6,8 @@ namespace CopilotClient.Services;
 public sealed class ServiceConversation
 {
     public ConversationMode Mode { get; init; }
+
+    public string? SystemInstruction { get; init; }
+
     public IReadOnlyList<ChatMessage> Messages { get; init; } = new List<ChatMessage>();
 }

@@ -206,11 +206,7 @@ public class ChatViewModel : ViewModelBase
 
     private ServiceConversation BuildServiceConversation()
     {
-        return new ServiceConversation
-        {
-            Mode = _conversation.Mode,
-            Messages = _conversation.Messages.ToList()
-        };
+        return PromptBuilder.Build(_conversation);
     }
 
     private void OpenSettings()
