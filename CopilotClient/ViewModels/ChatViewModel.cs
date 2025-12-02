@@ -1,6 +1,7 @@
 ﻿using CopilotClient.Models;
 using CopilotClient.Services;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -185,7 +186,7 @@ public class ChatViewModel : ViewModelBase
         IsBusy = true;
         try
         {
-            var replyMessage = await _chatService.SendAsync(Messages.ToList());
+            var replyMessage = await _chatService.SendAsync(BuildServiceConversation());
             userMessage.Status = MessageStatus.Sent;
             RemoveMessage(assistantMessage);
             AddMessage(replyMessage);
@@ -201,6 +202,15 @@ public class ChatViewModel : ViewModelBase
             PersistRequested?.Invoke(_conversation);
             IsBusy = false;
         }
+    }
+
+    private ServiceConversation BuildServiceConversation()
+    {
+        return new ServiceConversation
+        {
+            Mode = _conversation.Mode,
+            Messages = _conversation.Messages.ToList()
+        };
     }
 
     private void OpenSettings()

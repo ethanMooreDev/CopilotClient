@@ -10,57 +10,52 @@ namespace CopilotClient.Services;
 
 public class MockChatService : IChatService
 {
-    private static readonly string[] Responses =
+    public async Task<ChatMessage> SendAsync(ServiceConversation request, CancellationToken cancellationToken = default)
     {
-        """
-        **Got it!**  
-        Let me think about that for a moment… 🤔
-        """,
+        var messages = request.Messages.ToList();
 
-        """
-        Here's one way to break that down:
-        1. Understand the problem  
-        2. Identify inputs & outputs  
-        3. Sketch the logic  
-        4. Write a prototype
-        """,
+        // Last user message
+        var lastUser = messages.LastOrDefault(m => m.Role == ChatRole.User);
+        var userContent = lastUser?.Content ?? "(no user message)";
 
-        """
-        Here’s a quick example:
+        await Task.Delay(500, cancellationToken); // simulate latency
 
-        ```csharp
-        void DoWork()
+        string content = request.Mode switch
         {
-            Step1();
-            Step2();
-        }
-        ```
-        """
-    };
+            ConversationMode.Explain =>
+                "Mode: Explain\n\n" +
+                "Here's an explanation of your request/code:\n" +
+                userContent,
 
+            ConversationMode.Refactor =>
+                "Mode: Refactor\n\n" +
+                "Here's how I might refactor this (conceptually):\n" +
+                userContent,
 
-    private readonly Random _random = new();
+            ConversationMode.BugHunt =>
+                "Mode: BugHunt\n\n" +
+                "Potential issues / edge cases:\n" +
+                "- (placeholder issue #1)\n" +
+                "- (placeholder issue #2)\n\nOriginal:\n" +
+                userContent,
 
-    public async Task<ChatMessage> SendAsync(IEnumerable<ChatMessage> conversation, CancellationToken cancellationToken = default)
-    {
-        await Task.Delay(TimeSpan.FromSeconds(1.2), cancellationToken);
+            ConversationMode.Optimize =>
+                "Mode: Optimize\n\n" +
+                "Optimization ideas:\n" +
+                "- (placeholder optimization #1)\n\nOriginal:\n" +
+                userContent,
 
-        var lastUser = conversation.LastOrDefault(m => m.Role == ChatRole.User);
-        var baseResponse = Responses[_random.Next(Responses.Length)];
+            _ =>
+                "Mode: General\n\n" +
+                userContent
+        };
 
-        var content = lastUser is null
-            ? baseResponse
-            : $"{baseResponse}\n\nYou Said: \"{lastUser.Content}\"";
-
-        var chatMessage = new ChatMessage(
+        return new ChatMessage(
             clientId: Guid.NewGuid(),
             role: ChatRole.Assistant,
             content: content,
             createdAt: DateTime.UtcNow,
-            status: MessageStatus.Sent,
-            serverId: Guid.NewGuid()
+            status: MessageStatus.Sent
         );
-
-        return chatMessage;
     }
 }
