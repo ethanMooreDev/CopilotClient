@@ -236,7 +236,9 @@ public sealed partial class MarkdownBubble : UserControl
                 new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
                 new ColumnDefinition { Width = GridLength.Auto },
             },
-            Padding = new Thickness(10, 4, 4, 0)
+            Padding = new Thickness(10, 4, 4, 4),
+            BorderThickness = new Thickness(0, 0, 0, 1),
+            BorderBrush = new SolidColorBrush(ColorHelper.FromArgb(255, 30, 45, 65))
         };
 
         if(!string.IsNullOrEmpty(code.Info))
@@ -244,7 +246,8 @@ public sealed partial class MarkdownBubble : UserControl
             var languageLabel = new TextBlock
             {
                 Text = code.Info ?? string.Empty,
-                FontStyle = Windows.UI.Text.FontStyle.Italic,
+                //FontStyle = Windows.UI.Text.FontStyle.Italic,
+                FontWeight = FontWeights.Bold,
                 Margin = new Thickness(0, 4, 0, 0),
             };
 
@@ -617,18 +620,40 @@ public sealed partial class MarkdownBubble : UserControl
     {
         var img = new Image
         {
-            Source = new BitmapImage(new Uri(imageInline.Url)),
             Stretch = Stretch.Uniform,
             MaxWidth = 400,
             Margin = new Thickness(0, 8, 0, 8)
         };
 
+        try
+        {
+            img.Source = new BitmapImage(new Uri(imageInline.Url));
+        }
+        catch
+        {
+            // If the URI itself is invalid, fall back immediately
+            return CreateBrokenImagePlaceholder(imageInline);
+        }
+
         // Optional: use alt text as tooltip
         if (!string.IsNullOrEmpty(imageInline.FirstChild?.ToString()))
             ToolTipService.SetToolTip(img, imageInline.FirstChild.ToString());
 
+        // Handle broken links
+        img.ImageFailed += (_, __) =>
+        {
+            var parent = img.Parent as Panel;
+            if (parent != null)
+            {
+                int index = parent.Children.IndexOf(img);
+                parent.Children.RemoveAt(index);
+                parent.Children.Insert(index, CreateBrokenImagePlaceholder(imageInline));
+            }
+        };
+
         return img;
     }
+
 
 
     private UIElement CreateTable(Table table)
@@ -656,11 +681,19 @@ public sealed partial class MarkdownBubble : UserControl
                     {
                         var rtb = new RichTextBlock { IsTextSelectionEnabled = true };
                         var para = new Paragraph();
+
                         foreach (var block in cell)
                         {
                             if (block is ParagraphBlock p)
                                 AddInlines(para, p.Inline);
                         }
+
+                        // Style header rows differently
+                        if (row.IsHeader)
+                        {
+                            para.FontWeight = FontWeights.Bold;
+                        }
+
                         rtb.Blocks.Add(para);
 
                         var border = new Border
@@ -668,7 +701,10 @@ public sealed partial class MarkdownBubble : UserControl
                             BorderBrush = new SolidColorBrush(Colors.Gray),
                             BorderThickness = new Thickness(0.5),
                             Padding = new Thickness(6),
-                            Child = rtb
+                            Child = rtb,
+                            Background = row.IsHeader
+                                ? new SolidColorBrush(ColorHelper.FromArgb(255, 30, 45, 65)) // header background
+                                : null
                         };
 
                         Grid.SetRow(border, rowIndex);
@@ -683,6 +719,7 @@ public sealed partial class MarkdownBubble : UserControl
 
         return grid;
     }
+
 
     // Helper: consume everything between an opening HtmlInline and its closing tag.
     // Returns inner plain text and the node after the closing tag if found.
@@ -762,4 +799,27 @@ public sealed partial class MarkdownBubble : UserControl
         return (true, isChecked, after);
     }
 
+    private UIElement CreateBrokenImagePlaceholder(LinkInline imageInline)
+    {
+        return new Border
+        {
+            Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 20, 28, 40)), // subtle dark background for #0B1120 theme
+            Width = 200,
+            Height = 100,
+            Margin = new Thickness(0, 8, 0, 8),
+            Child = new TextBlock
+            {
+                Text = $"Image not found\n{imageInline.Url}",
+                Foreground = new SolidColorBrush(Colors.LightGray),
+                TextAlignment = TextAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                TextWrapping = TextWrapping.Wrap,
+                IsTextSelectionEnabled = true,
+                
+            }
+        };
+    }
+
 }
+
