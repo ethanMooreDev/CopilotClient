@@ -635,8 +635,6 @@ public sealed partial class MarkdownBubble : UserControl
     {
         var grid = new Grid
         {
-            BorderBrush = new SolidColorBrush(Colors.Gray),
-            BorderThickness = new Thickness(1),
             Margin = new Thickness(0, 8, 0, 8)
         };
 
