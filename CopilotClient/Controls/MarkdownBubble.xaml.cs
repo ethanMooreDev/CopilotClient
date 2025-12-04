@@ -11,7 +11,13 @@ using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System;
+using System.Collections.Generic;
+using System.Security.Cryptography.X509Certificates;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Globalization;
+using Windows.UI;
+using ColorCode;
+using ColorCode.Common;
 using CodeInline = Markdig.Syntax.Inlines.CodeInline;
 using EmphasisInline = Markdig.Syntax.Inlines.EmphasisInline;
 using Hyperlink = Microsoft.UI.Xaml.Documents.Hyperlink;
@@ -42,6 +48,20 @@ public sealed partial class MarkdownBubble : UserControl
 
     private static readonly MarkdownPipeline Pipeline =
         new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+    private IDictionary<string, SolidColorBrush> GetDarkThemePalette()
+    {
+        return new Dictionary<string, SolidColorBrush>
+    {
+        { ScopeName.PlainText, new SolidColorBrush(Color.FromArgb(255, 212, 212, 212)) }, // light gray
+        { ScopeName.Keyword,   new SolidColorBrush(Color.FromArgb(255, 86, 156, 214)) }, // blue
+        { ScopeName.String,    new SolidColorBrush(Color.FromArgb(255, 206, 145, 120)) }, // orange
+        { ScopeName.Comment,   new SolidColorBrush(Color.FromArgb(255, 106, 153, 85)) },  // green
+        { ScopeName.Type,      new SolidColorBrush(Color.FromArgb(255, 78, 201, 176)) },  // teal
+        { ScopeName.Number,    new SolidColorBrush(Color.FromArgb(255, 181, 206, 168)) }  // light green
+    };
+    }
+
 
     public MarkdownBubble()
     {
@@ -221,9 +241,9 @@ public sealed partial class MarkdownBubble : UserControl
 
     private UIElement CreateCodeBlock(FencedCodeBlock code)
     {
-        // code.Info has the language, if applicable. 
+        string codeText = code.Lines.ToString();
+        string language = code.Info ?? "";
 
-        // Overall code block
         var border = new Border
         {
             Background = (Brush)Resources["CodeBackground"],
@@ -239,63 +259,55 @@ public sealed partial class MarkdownBubble : UserControl
             HorizontalAlignment = HorizontalAlignment.Right
         };
 
-        copyButton.Click += (_, __) => 
+        copyButton.Click += (_, __) =>
         {
-            DataPackage dataPackage = new DataPackage();
-            dataPackage.RequestedOperation = DataPackageOperation.Copy;
-            dataPackage.SetText(code.Lines.ToString());
+            var dataPackage = new DataPackage { RequestedOperation = DataPackageOperation.Copy };
+            dataPackage.SetText(codeText);
             Clipboard.SetContent(dataPackage);
         };
 
         var headerGrid = new Grid
         {
             ColumnDefinitions =
-            {
-                new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
-                new ColumnDefinition { Width = GridLength.Auto },
-            },
+        {
+            new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
+            new ColumnDefinition { Width = GridLength.Auto },
+        },
             Padding = new Thickness(10, 4, 4, 4),
             BorderThickness = new Thickness(0, 0, 0, 1),
             BorderBrush = new SolidColorBrush(ColorHelper.FromArgb(255, 30, 45, 65))
         };
 
-        if(!string.IsNullOrEmpty(code.Info))
+        if (!string.IsNullOrEmpty(language))
         {
             var languageLabel = new TextBlock
             {
-                Text = code.Info ?? string.Empty,
-                //FontStyle = Windows.UI.Text.FontStyle.Italic,
+                Text = language,
                 FontWeight = FontWeights.Bold,
                 Margin = new Thickness(0, 4, 0, 0),
             };
-
             Grid.SetColumn(languageLabel, 0);
             headerGrid.Children.Add(languageLabel);
         }
-        
+
         Grid.SetColumn(copyButton, 1);
         headerGrid.Children.Add(copyButton);
 
-        // actual code in block
-        var tb = new TextBlock
+        // RichTextBlock for syntax highlighting
+        var rtb = new RichTextBlock
         {
-            Text = code.Lines.ToString(),
-            TextWrapping = TextWrapping.NoWrap,
+            IsTextSelectionEnabled = true,
             FontFamily = new FontFamily("Consolas"),
-            Foreground = (Brush)Resources["TextPrimary"],
-            LineHeight = 20,
             Margin = new Thickness(10, 15, 10, 10)
         };
-        tb.IsTextSelectionEnabled = true;
 
-        // container for header and code
-        var stackPanel = new StackPanel
-        {
-            Orientation = Orientation.Vertical,
-        };
+        var para = new Paragraph();
+        AddCodeRuns(para, codeText, language); // custom tokenizer or ColorCode integration
+        rtb.Blocks.Add(para);
 
+        var stackPanel = new StackPanel { Orientation = Orientation.Vertical };
         stackPanel.Children.Add(headerGrid);
-        stackPanel.Children.Add(tb);
+        stackPanel.Children.Add(rtb);
 
         var scroll = new ScrollViewer
         {
@@ -308,9 +320,11 @@ public sealed partial class MarkdownBubble : UserControl
         return border;
     }
 
+
     private UIElement CreateIndentedCodeBlock(CodeBlock code)
     {
-        // Overall code block container
+        string codeText = code.Lines.ToString();
+
         var border = new Border
         {
             Background = (Brush)Resources["CodeBackground"],
@@ -318,7 +332,6 @@ public sealed partial class MarkdownBubble : UserControl
             Margin = new Thickness(0, 0, 0, 10)
         };
 
-        // Copy button
         var copyButton = new Button
         {
             Content = "Copy code",
@@ -330,46 +343,40 @@ public sealed partial class MarkdownBubble : UserControl
 
         copyButton.Click += (_, __) =>
         {
-            var dataPackage = new Windows.ApplicationModel.DataTransfer.DataPackage
-            {
-                RequestedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Copy
-            };
-            dataPackage.SetText(code.Lines.ToString());
-            Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
+            var dataPackage = new DataPackage { RequestedOperation = DataPackageOperation.Copy };
+            dataPackage.SetText(codeText);
+            Clipboard.SetContent(dataPackage);
         };
 
-        // Header grid (no language label for indented blocks)
         var headerGrid = new Grid
         {
             ColumnDefinitions =
-            {
-                new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
-                new ColumnDefinition { Width = GridLength.Auto },
-            },
+        {
+            new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
+            new ColumnDefinition { Width = GridLength.Auto },
+        },
             Padding = new Thickness(10, 4, 4, 0)
         };
 
         Grid.SetColumn(copyButton, 1);
         headerGrid.Children.Add(copyButton);
 
-        // Actual code text
-        var tb = new TextBlock
+        // RichTextBlock instead of TextBlock
+        var rtb = new RichTextBlock
         {
-            Text = code.Lines.ToString(),
-            TextWrapping = TextWrapping.NoWrap,
+            IsTextSelectionEnabled = true,
             FontFamily = new FontFamily("Consolas"),
-            Foreground = (Brush)Resources["TextPrimary"],
-            LineHeight = 20,
-            Margin = new Thickness(10, 15, 10, 10),
-            IsTextSelectionEnabled = true
+            Margin = new Thickness(10, 15, 10, 10)
         };
 
-        // StackPanel to hold header + code
+        var para = new Paragraph();
+        AddCodeRuns(para, codeText, "plain"); // fallback tokenizer
+        rtb.Blocks.Add(para);
+
         var stackPanel = new StackPanel { Orientation = Orientation.Vertical };
         stackPanel.Children.Add(headerGrid);
-        stackPanel.Children.Add(tb);
+        stackPanel.Children.Add(rtb);
 
-        // ScrollViewer for horizontal scrolling
         var scroll = new ScrollViewer
         {
             HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -380,6 +387,7 @@ public sealed partial class MarkdownBubble : UserControl
         border.Child = scroll;
         return border;
     }
+
 
 
     private UIElement CreateHorizontalRule()
@@ -837,6 +845,17 @@ public sealed partial class MarkdownBubble : UserControl
                 
             }
         };
+    }
+
+    private void AddCodeRuns(Paragraph para, string code, string language)
+    {
+        // Resolve language (fallback to C#)
+        ILanguage lang = Languages.FindById(language) ?? Languages.CSharp;
+
+        var formatter = new RichTextBlockFormatter(ElementTheme.Dark);
+
+        // Write colored runs directly into the paragraph's InlineCollection
+        formatter.FormatInlines(code, lang, para.Inlines);
     }
 
 }
