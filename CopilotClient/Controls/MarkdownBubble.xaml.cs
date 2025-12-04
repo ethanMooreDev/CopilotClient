@@ -81,23 +81,40 @@ public sealed partial class MarkdownBubble : UserControl
     {
         var rtb = new RichTextBlock { IsTextSelectionEnabled = true };
 
-        // Pick style based on heading level
         var para = new Paragraph();
         var run = new Run { Text = InlineToPlainText(h.Inline) ?? "" };
 
         switch (h.Level)
         {
             case 1:
-                run.FontSize = 22;
+                run.FontSize = 26;
                 run.FontWeight = FontWeights.Bold;
+                para.Margin = new Thickness(0, 12, 0, 6);
                 break;
             case 2:
-                run.FontSize = 19;
+                run.FontSize = 22;
                 run.FontWeight = FontWeights.SemiBold;
+                para.Margin = new Thickness(0, 10, 0, 6);
                 break;
-            default:
-                run.FontSize = 16;
+            case 3:
+                run.FontSize = 20;
                 run.FontWeight = FontWeights.SemiBold;
+                para.Margin = new Thickness(0, 8, 0, 4);
+                break;
+            case 4:
+                run.FontSize = 18;
+                run.FontWeight = FontWeights.SemiBold;
+                para.Margin = new Thickness(0, 6, 0, 4);
+                break;
+            case 5:
+                run.FontSize = 16;
+                run.FontWeight = FontWeights.Normal;
+                para.Margin = new Thickness(0, 4, 0, 2);
+                break;
+            case 6:
+                run.FontSize = 14;
+                run.FontWeight = FontWeights.Normal;
+                para.Margin = new Thickness(0, 2, 0, 2);
                 break;
         }
 
@@ -106,6 +123,7 @@ public sealed partial class MarkdownBubble : UserControl
 
         return rtb;
     }
+
 
 
     private UIElement CreateParagraph(ParagraphBlock p)
