@@ -1,16 +1,19 @@
-﻿using System;
+﻿using CopilotClient.Models;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
-using CopilotClient.Models;
 
 namespace CopilotClient.Persistence;
 
 public class JsonConversationStore : IConversationStore
 {
     private readonly string _filePath;
+
+    private readonly SemaphoreSlim _fileLock = new(1, 1);
 
     public JsonConversationStore()
     {
@@ -82,18 +85,26 @@ public class JsonConversationStore : IConversationStore
 
     public async Task SaveConversationAsync(Conversation conversation)
     {
-        var all = await LoadAllAsync();
+        await _fileLock.WaitAsync();
+        try
+        {
+            var all = await LoadAllAsync();
 
-        var index = all.FindIndex(c => c.Id == conversation.Id);
+            conversation.LastUpdatedAt = DateTime.UtcNow;
 
-        conversation.LastUpdatedAt = DateTime.UtcNow;
+            var index = all.FindIndex(c => c.Id == conversation.Id);
 
-        if (index >= 0)
-            all[index] = conversation;
-        else
-            all.Add(conversation);
+            if (index >= 0)
+                all[index] = conversation;
+            else
+                all.Add(conversation);
 
-        await SaveAllAsync(all);
+            await SaveAllAsync(all);
+        }
+        finally
+        {
+            _fileLock.Release();
+        }
     }
 
     public async Task DeleteConversationAsync(Guid id)
