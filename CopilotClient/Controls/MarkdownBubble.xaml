@@ -13,6 +13,7 @@
         <SolidColorBrush x:Key="CodeBackground" Color="#111827"/>
         <SolidColorBrush x:Key="QuoteBorder" Color="#374151"/>
         <SolidColorBrush x:Key="QuoteForeground" Color="Gray"/>
+        <SolidColorBrush x:Key="BreakLine" Color="#2A3448"/>
 
 
         <!-- Text styles -->

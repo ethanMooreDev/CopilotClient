@@ -29,6 +29,7 @@ using MdContainerInline = Markdig.Syntax.Inlines.ContainerInline;
 using MdInline = Markdig.Syntax.Inlines.Inline;
 using Run = Microsoft.UI.Xaml.Documents.Run;
 using TextBlock = Microsoft.UI.Xaml.Controls.TextBlock;
+using Windows.ApplicationModel.Appointments.DataProvider;
 
 namespace CopilotClient.Controls;
 
@@ -48,20 +49,6 @@ public sealed partial class MarkdownBubble : UserControl
 
     private static readonly MarkdownPipeline Pipeline =
         new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-
-    private IDictionary<string, SolidColorBrush> GetDarkThemePalette()
-    {
-        return new Dictionary<string, SolidColorBrush>
-    {
-        { ScopeName.PlainText, new SolidColorBrush(Color.FromArgb(255, 212, 212, 212)) }, // light gray
-        { ScopeName.Keyword,   new SolidColorBrush(Color.FromArgb(255, 86, 156, 214)) }, // blue
-        { ScopeName.String,    new SolidColorBrush(Color.FromArgb(255, 206, 145, 120)) }, // orange
-        { ScopeName.Comment,   new SolidColorBrush(Color.FromArgb(255, 106, 153, 85)) },  // green
-        { ScopeName.Type,      new SolidColorBrush(Color.FromArgb(255, 78, 201, 176)) },  // teal
-        { ScopeName.Number,    new SolidColorBrush(Color.FromArgb(255, 181, 206, 168)) }  // light green
-    };
-    }
-
 
     public MarkdownBubble()
     {
@@ -107,50 +94,74 @@ public sealed partial class MarkdownBubble : UserControl
         switch (h.Level)
         {
             case 1:
-                run.FontSize = 26;
+                run.FontSize = 32;
                 run.FontWeight = FontWeights.Bold;
-                para.Margin = new Thickness(0, 12, 0, 6);
+                //para.LineHeight = run.FontSize * 1.25;
                 break;
             case 2:
-                run.FontSize = 22;
+                run.FontSize = 24;
                 run.FontWeight = FontWeights.SemiBold;
-                para.Margin = new Thickness(0, 10, 0, 6);
+                //para.LineHeight = run.FontSize * 1.25;
                 break;
             case 3:
                 run.FontSize = 20;
                 run.FontWeight = FontWeights.SemiBold;
-                para.Margin = new Thickness(0, 8, 0, 4);
+                //para.LineHeight = run.FontSize * 1.25;
                 break;
             case 4:
-                run.FontSize = 18;
+                run.FontSize = 16;
                 run.FontWeight = FontWeights.SemiBold;
-                para.Margin = new Thickness(0, 6, 0, 4);
+                //para.LineHeight = run.FontSize * 1.5;
                 break;
             case 5:
-                run.FontSize = 16;
-                run.FontWeight = FontWeights.Normal;
-                para.Margin = new Thickness(0, 4, 0, 2);
-                break;
-            case 6:
                 run.FontSize = 14;
                 run.FontWeight = FontWeights.Normal;
-                para.Margin = new Thickness(0, 2, 0, 2);
+                //para.LineHeight = run.FontSize * 1.5;
+                break;
+            case 6:
+                run.FontSize = 12;
+                run.FontWeight = FontWeights.Normal;
+                //para.LineHeight = run.FontSize * 1.5;
                 break;
         }
 
         para.Inlines.Add(run);
         rtb.Blocks.Add(para);
 
+        if (h.Level == 1 || h.Level == 2)
+        {
+            return new Border
+            {
+                BorderBrush = (Brush)Resources["BreakLine"], // GitHub gray
+                BorderThickness = new Thickness(0, 0, 0, 1),
+                Padding = new Thickness(0, 0, 0, 4), // mimic GitHub’s .3em padding
+                Margin = new Thickness(0, 0, 0, 12),
+                Child = rtb
+            };
+        }
+
+        para.Inlines.Add(new LineBreak());
+
         return rtb;
     }
 
 
 
-    private UIElement CreateParagraph(ParagraphBlock p)
+    private UIElement CreateParagraph(ParagraphBlock p, bool addLineBreak = true)
     {
         var rtb = new RichTextBlock { IsTextSelectionEnabled = true };
-        var para = new Paragraph();
+        var para = new Paragraph() 
+        {
+            LineHeight = 24
+        };
+
         AddInlines(para, p.Inline);
+
+        if (addLineBreak)
+        {
+            //para.Inlines.Add(new LineBreak());
+        }
+
         rtb.Blocks.Add(para);
         return rtb;
     }
@@ -198,7 +209,6 @@ public sealed partial class MarkdownBubble : UserControl
                                     Content = new TextBlock
                                     {
                                         // Render the rest of the paragraph as formatted markdown (optional)
-                                        // If you prefer rich formatting (links/emphasis), swap to CreateParagraph(p)
                                         Text = label,
                                         Style = (Style)Resources["MdParagraph"]
                                     }
@@ -211,7 +221,7 @@ public sealed partial class MarkdownBubble : UserControl
                             else
                             {
                                 // Normal list paragraph rendering
-                                content.Children.Add(CreateParagraph(p));
+                                content.Children.Add(CreateParagraph(p, false));
                             }
                             break;
                         }
@@ -394,8 +404,8 @@ public sealed partial class MarkdownBubble : UserControl
     {
         return new Border
         {
-            BorderBrush = new SolidColorBrush(Colors.Gray),
-            BorderThickness = new Thickness(0, 1, 0, 0),
+            BorderBrush = (Brush)Resources["BreakLine"],
+            BorderThickness = new Thickness(0, 5, 0, 0),
             Margin = new Thickness(0, 10, 0, 10)
         };
     }
@@ -730,7 +740,9 @@ public sealed partial class MarkdownBubble : UserControl
                             Child = rtb,
                             Background = row.IsHeader
                                 ? new SolidColorBrush(ColorHelper.FromArgb(255, 30, 45, 65)) // header background
-                                : null
+                                : rowIndex % 2 == 0
+                                    ? new SolidColorBrush(ColorHelper.FromArgb(255, 20, 26, 42))
+                                    : null
                         };
 
                         Grid.SetRow(border, rowIndex);
@@ -849,6 +861,19 @@ public sealed partial class MarkdownBubble : UserControl
 
     private void AddCodeRuns(Paragraph para, string code, string language)
     {
+
+        if (string.IsNullOrEmpty(language))
+        {
+            para.Inlines.Add(new Run
+            {
+                Text = code,
+                Foreground = new SolidColorBrush(Colors.LightGray),
+                FontFamily = new FontFamily("Consolas")
+            });
+            return;
+        }
+
+
         // Resolve language (fallback to C#)
         ILanguage lang = Languages.FindById(language) ?? Languages.CSharp;
 
