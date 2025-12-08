@@ -1,4 +1,8 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using CopilotClient.Options;
+using CopilotClient.Persistence;
+using CopilotClient.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -29,6 +33,8 @@ namespace CopilotClient
     {
         private Window? _window;
 
+        public static IServiceProvider Services { get; private set; } = default!;
+
         public static IConfiguration Configuration { get; private set; } = default!;
 
         /// <summary>
@@ -40,6 +46,8 @@ namespace CopilotClient
             InitializeComponent();
 
             BuildConfiguration();
+
+            ConfigureServices();
         }
 
         private static void BuildConfiguration()
@@ -61,5 +69,38 @@ namespace CopilotClient
             _window = new MainWindow();
             _window.Activate();
         }
+
+        private void ConfigureServices()
+        {
+            var services = new ServiceCollection();
+
+            // Make configuration injectable if you ever need it
+            var azureSection = Configuration.GetSection("AzureOpenAI");
+
+            var azureOptions = new AzureOpenAiOptions
+            {
+                Endpoint = azureSection["Endpoint"] ?? "",
+                DeploymentName = azureSection["DeploymentName"] ?? "",
+                ApiKey = azureSection["ApiKey"] ?? "",
+
+                Temperature = float.TryParse(azureSection["Temperature"], out var temp) ? temp : 0.3f,
+                MaxOutputTokens = int.TryParse(azureSection["MaxOutputTokens"], out var tok) ? tok : 512,
+
+                ExplainTemperature = float.TryParse(azureSection["ExplainTemperature"], out var explainTemp) ? explainTemp : 0.4f,
+                ExplainMaxOutputTokens = int.TryParse(azureSection["ExplainMaxOutputTokens"], out var explainTok) ? explainTok : 1024,
+            };
+
+            services.AddSingleton(azureOptions);
+
+            // Core services
+            services.AddSingleton<IConversationStore, JsonConversationStore>();
+            services.AddSingleton<IChatService, AzureOpenAiChatService>();
+
+            // ViewModels
+            services.AddSingleton<ConversationManagerViewModel>();
+
+            Services = services.BuildServiceProvider();
+        }
+
     }
 }

@@ -10,4 +10,12 @@ public sealed class AzureOpenAiOptions
 
     // API key for the Azure OpenAI resource
     public string ApiKey { get; init; } = string.Empty;
+
+    public float Temperature { get; set; } = 0.3f;
+
+    public int MaxOutputTokens { get; set; } = 512;
+
+    public float ExplainTemperature { get; set; } = 0.3f;
+
+    public int ExplainMaxOutputTokens { get; set; } = 512;
 }

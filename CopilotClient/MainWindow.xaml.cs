@@ -2,6 +2,7 @@ using CopilotClient.Options;
 using CopilotClient.Persistence;
 using CopilotClient.Services;
 using CopilotClient.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using System;
 
@@ -15,12 +16,7 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
 
-        var store = new JsonConversationStore();
-
-        var azureOptions = GetAzureOpenAiOptionsFromConfig();
-        IChatService chatService = new AzureOpenAiChatService(azureOptions);
-
-        _vm = new ConversationManagerViewModel(chatService, store);
+        _vm = App.Services.GetRequiredService<ConversationManagerViewModel>();
 
         WindowChatView.DataContext = _vm;
 

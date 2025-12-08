@@ -47,8 +47,8 @@ public sealed class AzureOpenAiChatService : IChatService
 
             var chatRequestOptions = new ChatCompletionOptions
             {
-                Temperature = request.Mode == CopilotClient.Models.ConversationMode.Explain ? 0.4f : 0.3f,
-                MaxOutputTokenCount = request.Mode == CopilotClient.Models.ConversationMode.Explain ? 1024 : 512
+                Temperature = request.Mode == CopilotClient.Models.ConversationMode.Explain ? _options.ExplainTemperature : _options.Temperature,
+                MaxOutputTokenCount = request.Mode == CopilotClient.Models.ConversationMode.Explain ? _options.ExplainMaxOutputTokens : _options.MaxOutputTokens
             };
 
             ChatCompletion response = await _chatClient.CompleteChatAsync(
