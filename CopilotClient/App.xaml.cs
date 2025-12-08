@@ -92,6 +92,8 @@ namespace CopilotClient
 
             services.AddSingleton(azureOptions);
 
+            services.AddSingleton<AiRetryPolicy>();
+
             // Core services
             services.AddSingleton<IConversationStore, JsonConversationStore>();
             services.AddSingleton<IChatService, AzureOpenAiChatService>();

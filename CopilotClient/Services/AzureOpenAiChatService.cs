@@ -4,6 +4,8 @@ using Azure.AI.OpenAI.Chat;
 using CopilotClient.Options;
 using CopilotClient.Services; // for ServiceConversation
 using OpenAI.Chat;
+using Polly;
+using Polly.Retry;
 using System;
 using System.Linq;
 using System.Text;
@@ -19,7 +21,9 @@ public sealed class AzureOpenAiChatService : IChatService
 
     private readonly AzureOpenAiOptions _options;
 
-    public AzureOpenAiChatService(AzureOpenAiOptions options)
+    private readonly AsyncRetryPolicy _retryPolicy;
+
+    public AzureOpenAiChatService(AzureOpenAiOptions options, AiRetryPolicy aiRetryPolicy)
     {
         if (string.IsNullOrWhiteSpace(options.Endpoint))
             throw new ArgumentException("Azure OpenAI Endpoint is required.", nameof(options));
@@ -37,6 +41,7 @@ public sealed class AzureOpenAiChatService : IChatService
         _chatClient = _client.GetChatClient(options.DeploymentName);
 
         _options = options;
+        _retryPolicy = aiRetryPolicy.RetryPolicy;
     }
 
     public async Task<CopilotClient.Models.ChatMessage> SendAsync(ServiceConversation request, CancellationToken cancellationToken = default)
@@ -51,9 +56,11 @@ public sealed class AzureOpenAiChatService : IChatService
                 MaxOutputTokenCount = request.Mode == CopilotClient.Models.ConversationMode.Explain ? _options.ExplainMaxOutputTokens : _options.MaxOutputTokens
             };
 
-            ChatCompletion response = await _chatClient.CompleteChatAsync(
-                chatMessages,
-                chatRequestOptions,
+            ChatCompletion response = await _retryPolicy.ExecuteAsync(
+                async ct => await _chatClient.CompleteChatAsync(
+                    chatMessages,
+                    chatRequestOptions,
+                    ct),
                 cancellationToken
             );
 
