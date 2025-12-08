@@ -23,6 +23,9 @@ public class ChatViewModel : ViewModelBase
 
     private bool _useStreaming = true;
 
+    private const int SummarizeThresholdMessages = 40;
+    private const int KeepRecentMessages = 10;
+
     private readonly Conversation _conversation;
 
     public Guid ConversationId { get =>  _conversation.Id; }
@@ -186,16 +189,18 @@ public class ChatViewModel : ViewModelBase
             {
                 await SendNonStreamingAsync(userMessage);
             }
+
+            await SummarizeIfNeededAsync();
         }
         catch (OperationCanceledException)
         {
+            
         }
         finally
         {
             IsBusy = false;
         }
 
-        // Persist again: after assistant reply / failure state
         PersistRequested?.Invoke(_conversation);
     }
 
@@ -305,7 +310,64 @@ public class ChatViewModel : ViewModelBase
         }
     }
 
+    private async Task SummarizeIfNeededAsync()
+    {
 
+        bool tooManyMessages = _conversation.Messages.Count > 40;
+        bool tooManyTokens = EstimateConversationTokens(_conversation) > 6000;
+
+        if (!tooManyTokens && !tooManyMessages)
+        {
+            return;
+        }
+
+        // Take all but the last KeepRecentMessages
+        var total = _conversation.Messages.Count;
+        var cutoff = Math.Max(0, total - KeepRecentMessages);
+
+        var toSummarize = _conversation.Messages
+            .Take(cutoff)
+            .Where(m => m.Status == MessageStatus.Sent) // ignore transient/failed
+            .ToList();
+
+        if (toSummarize.Count == 0)
+            return;
+
+        try
+        {
+            var summaryText = await _chatService.SummarizeAsync(toSummarize);
+
+            if (!string.IsNullOrWhiteSpace(summaryText))
+            {
+                // Update conversation summary
+                if (string.IsNullOrWhiteSpace(_conversation.Summary))
+                {
+                    _conversation.Summary = summaryText;
+                }
+                else
+                {
+                    // Append / refine existing summary
+                    _conversation.Summary += Environment.NewLine + Environment.NewLine + summaryText;
+                }
+
+                _conversation.SummaryUpdatedAt = DateTime.UtcNow;
+
+                // Remove summarized messages from both the backing list and the UI
+                foreach (var msg in toSummarize)
+                {
+                    Messages.Remove(msg);
+                    _conversation.Messages.Remove(msg);
+                }
+
+                // Persist updated conversation (summary + trimmed history)
+                PersistRequested?.Invoke(_conversation);
+            }
+        }
+        catch
+        {
+            
+        }
+    }
 
     private ServiceConversation BuildServiceConversation()
     {
@@ -353,6 +415,26 @@ public class ChatViewModel : ViewModelBase
                 OnPropertyChanged();
             }
         }
+    }
+
+    private static int EstimateTokens(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return 0;
+
+        return content.Length / 4 + 1;
+    }
+
+    private int EstimateConversationTokens(Conversation conversation)
+    {
+        int total = 0;
+
+        foreach (var msg in conversation.Messages)
+        {
+            total += EstimateTokens(msg.Content);
+        }
+
+        return total;
     }
 
     public Array AvailableModes => Enum.GetValues(typeof(ConversationMode));

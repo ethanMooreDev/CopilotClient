@@ -76,4 +76,11 @@ public class MockChatService : IChatService
         yield return reply;
         await Task.CompletedTask;
     }
+
+    public Task<string> SummarizeAsync(IEnumerable<ChatMessage> messages, CancellationToken cancellationToken = default)
+    {
+        var joined = string.Join(" ", messages.Select(m => m.Content));
+        var preview = joined.Length > 120 ? joined[..120] + "..." : joined;
+        return Task.FromResult($"[Summary mock] {preview}");
+    }
 }

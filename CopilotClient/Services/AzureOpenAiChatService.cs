@@ -132,6 +132,55 @@ public sealed class AzureOpenAiChatService : IChatService
         }
     }
 
+    public async Task<string> SummarizeAsync(
+    IEnumerable<CopilotClient.Models.ChatMessage> messages,
+    CancellationToken cancellationToken = default)
+    {
+        // Build a system prompt specifically for summarization
+        var system = new SystemChatMessage(
+            "You are summarizing an earlier part of a programming-focused conversation. " +
+            "Write a concise summary that captures key questions, answers, and decisions, " +
+            "in 4–8 bullet points. Do not invent details.");
+
+        var historyMessages = messages
+            .OrderBy(m => m.CreatedAt)
+            .Select(m => m.Role switch
+            {
+                CopilotClient.Models.ChatRole.User =>
+                    (ChatMessage)new UserChatMessage(m.Content),
+                CopilotClient.Models.ChatRole.Assistant =>
+                    new AssistantChatMessage(m.Content),
+                _ =>
+                    new UserChatMessage(m.Content)
+            })
+            .ToList();
+
+        var all = new List<ChatMessage> { system };
+        all.AddRange(historyMessages);
+
+        var options = new ChatCompletionOptions
+        {
+            Temperature = 0.2f,
+            MaxOutputTokenCount = 256
+        };
+
+        ChatCompletion response = await _retryPolicy.ExecuteAsync(
+            async ct => await _chatClient.CompleteChatAsync(all, options, ct),
+            cancellationToken
+        );
+
+        var sb = new System.Text.StringBuilder();
+        foreach (var part in response.Content)
+        {
+            if (part.Kind == ChatMessageContentPartKind.Text && part.Text is not null)
+            {
+                sb.Append(part.Text);
+            }
+        }
+
+        return sb.ToString().Trim();
+    }
+
     private static CopilotClient.Models.ChatMessage BuildFailedMessage(string message, string? details = null)
     {
         var full = details is null ? message : $"{message}\n\nDetails: {details}";

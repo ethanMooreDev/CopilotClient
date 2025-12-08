@@ -21,4 +21,6 @@ public class Conversation
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
     public DateTime LastUpdatedAt { get; set; } = DateTime.UtcNow;
     public ConversationMode Mode { get; set; } = ConversationMode.General;
+    public string? Summary { get; set; }
+    public DateTime? SummaryUpdatedAt { get; set; }
 }
