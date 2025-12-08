@@ -53,6 +53,15 @@ public sealed partial class MarkdownBubble : UserControl
     public MarkdownBubble()
     {
         this.InitializeComponent();
+
+        ContentPanel.SizeChanged += (s, e) =>
+        {
+            foreach (FrameworkElement child in ContentPanel.Children)
+            {
+                child.MaxWidth = ContentPanel.ActualWidth;
+            }
+        };
+
     }
 
     private static void OnMarkdownChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -68,25 +77,56 @@ public sealed partial class MarkdownBubble : UserControl
 
         foreach (var block in doc)
         {
+            UIElement element = null;
+
             switch (block)
             {
-                case HeadingBlock h: ContentPanel.Children.Add(CreateHeading(h)); break;
-                case ParagraphBlock p: ContentPanel.Children.Add(CreateParagraph(p)); break;
-                case ListBlock list: ContentPanel.Children.Add(CreateList(list)); break;
-                case QuoteBlock quote: ContentPanel.Children.Add(CreateQuote(quote)); break;
-                case FencedCodeBlock fenced: ContentPanel.Children.Add(CreateCodeBlock(fenced)); break;
-                case CodeBlock code: ContentPanel.Children.Add(CreateIndentedCodeBlock(code)); break;
-                case Table table: ContentPanel.Children.Add(CreateTable(table)); break;
-                case ThematicBreakBlock _: ContentPanel.Children.Add(CreateHorizontalRule()); break;
-                case HtmlBlock html: ContentPanel.Children.Add(CreateHtmlBlock(html)); break;
+                case HeadingBlock h:
+                    element = CreateHeading(h);
+                    break;
+                case ParagraphBlock p:
+                    element = CreateParagraph(p);
+                    break;
+                case ListBlock list:
+                    element = CreateList(list);
+                    break;
+                case QuoteBlock quote:
+                    element = CreateQuote(quote);
+                    break;
+                case FencedCodeBlock fenced:
+                    element = CreateCodeBlock(fenced);
+                    break;
+                case CodeBlock code:
+                    element = CreateIndentedCodeBlock(code);
+                    break;
+                case Table table:
+                    element = CreateTable(table);
+                    break;
+                case ThematicBreakBlock _:
+                    element = CreateHorizontalRule();
+                    break;
+                case HtmlBlock html:
+                    element = CreateHtmlBlock(html);
+                    break;
             }
 
+            if (element != null)
+            {
+                // Stretch to available width so RichTextBlock wraps correctly
+                ((FrameworkElement) element).HorizontalAlignment = HorizontalAlignment.Stretch;
+
+                ContentPanel.Children.Add(element);
+            }
         }
     }
 
     private UIElement CreateHeading(HeadingBlock h)
     {
-        var rtb = new RichTextBlock { IsTextSelectionEnabled = true };
+        var rtb = new RichTextBlock { 
+            IsTextSelectionEnabled = true,
+            TextWrapping = TextWrapping.Wrap,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
 
         var para = new Paragraph();
         var run = new Run { Text = InlineToPlainText(h.Inline) ?? "" };
@@ -149,7 +189,12 @@ public sealed partial class MarkdownBubble : UserControl
 
     private UIElement CreateParagraph(ParagraphBlock p, bool addLineBreak = true)
     {
-        var rtb = new RichTextBlock { IsTextSelectionEnabled = true };
+        var rtb = new RichTextBlock { 
+            IsTextSelectionEnabled = true, 
+            TextWrapping = TextWrapping.Wrap,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+
+        };
         var para = new Paragraph() 
         {
             LineHeight = 24
@@ -169,35 +214,52 @@ public sealed partial class MarkdownBubble : UserControl
 
     private UIElement CreateList(ListBlock list)
     {
-        var panel = new StackPanel { Spacing = 4, Margin = new Thickness(0, 0, 0, 10) };
+        var panel = new StackPanel
+        {
+            Spacing = 4,
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+
         int index = 1;
 
         foreach (ListItemBlock item in list)
         {
-            var itemPanel = new StackPanel { Spacing = 4, Orientation = Orientation.Horizontal };
+            // Grid with two columns: bullet + content
+            var itemGrid = new Grid
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+            itemGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); // bullet
+            itemGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // content
 
-            // Default bullet text
+            // Bullet text
             var bulletText = list.IsOrdered ? $"{index}. " : "• ";
             var bullet = new TextBlock
             {
                 Text = bulletText,
                 Style = (Style)Resources["MdParagraph"],
-                Margin = new Thickness(0, 0, 4, 0)
+                Margin = new Thickness(0, 0, 4, 0),
+                VerticalAlignment = VerticalAlignment.Top
             };
+            Grid.SetColumn(bullet, 0);
 
-            var content = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Top };
+            // Content stack
+            var content = new StackPanel
+            {
+                Spacing = 2,
+                VerticalAlignment = VerticalAlignment.Top,
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+            Grid.SetColumn(content, 1);
 
+            // Render child blocks inside content
             foreach (var childBlock in item)
             {
                 switch (childBlock)
                 {
                     case ParagraphBlock p:
                         {
-                            // Extract raw line from source using Span
                             var raw = ExtractRaw(p);
-
-                            // Detect GitHub task list markers at the start of the paragraph text
-                            // Accept forms like "- [x] ..." or "* [ ] ..." and tolerate spaces
                             var (isTask, isChecked, label) = ParseTaskFromRaw(raw);
 
                             if (isTask)
@@ -208,28 +270,32 @@ public sealed partial class MarkdownBubble : UserControl
                                     IsEnabled = false,
                                     Content = new TextBlock
                                     {
-                                        // Render the rest of the paragraph as formatted markdown (optional)
                                         Text = label,
-                                        Style = (Style)Resources["MdParagraph"]
+                                        Style = (Style)Resources["MdParagraph"],
+                                        TextWrapping = TextWrapping.Wrap
                                     }
                                 };
                                 content.Children.Add(cb);
 
-                                // Hide the bullet for task items to avoid bullet + checkbox duplication
+                                // Hide bullet for task items
                                 bullet.Text = "";
                             }
                             else
                             {
-                                // Normal list paragraph rendering
-                                content.Children.Add(CreateParagraph(p, false));
+                                var para = CreateParagraph(p, false);
+                                if (para is FrameworkElement fe)
+                                {
+                                    fe.HorizontalAlignment = HorizontalAlignment.Stretch;
+                                }
+                                content.Children.Add(para);
                             }
                             break;
                         }
 
-
                     case ListBlock nested:
                         var nestedPanel = CreateList(nested);
-                        (nestedPanel as FrameworkElement)!.Margin = new Thickness(20, 0, 0, 0);
+                        if (nestedPanel is FrameworkElement nestedFe)
+                            nestedFe.Margin = new Thickness(20, 0, 0, 0);
                         content.Children.Add(nestedPanel);
                         break;
 
@@ -239,14 +305,16 @@ public sealed partial class MarkdownBubble : UserControl
                 }
             }
 
-            itemPanel.Children.Add(bullet);
-            itemPanel.Children.Add(content);
-            panel.Children.Add(itemPanel);
+            itemGrid.Children.Add(bullet);
+            itemGrid.Children.Add(content);
+            panel.Children.Add(itemGrid);
+
             index++;
         }
 
         return panel;
     }
+
 
 
     private UIElement CreateCodeBlock(FencedCodeBlock code)
@@ -308,7 +376,10 @@ public sealed partial class MarkdownBubble : UserControl
         {
             IsTextSelectionEnabled = true,
             FontFamily = new FontFamily("Consolas"),
-            Margin = new Thickness(10, 15, 10, 10)
+            Margin = new Thickness(10, 15, 10, 10),
+            TextWrapping = TextWrapping.Wrap,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+
         };
 
         var para = new Paragraph();
@@ -376,7 +447,10 @@ public sealed partial class MarkdownBubble : UserControl
         {
             IsTextSelectionEnabled = true,
             FontFamily = new FontFamily("Consolas"),
-            Margin = new Thickness(10, 15, 10, 10)
+            Margin = new Thickness(10, 15, 10, 10),
+            TextWrapping = TextWrapping.Wrap,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+
         };
 
         var para = new Paragraph();
@@ -447,7 +521,10 @@ public sealed partial class MarkdownBubble : UserControl
                     {
                         IsTextSelectionEnabled = true,
                         FontStyle = Windows.UI.Text.FontStyle.Italic,
-                        Foreground = (Brush)Resources["QuoteForeground"]
+                        Foreground = (Brush)Resources["QuoteForeground"],
+                        TextWrapping = TextWrapping.Wrap,
+                        HorizontalAlignment = HorizontalAlignment.Stretch
+
                     };
                     rtb.Blocks.Add(para);
                     stack.Children.Add(rtb);
@@ -715,7 +792,12 @@ public sealed partial class MarkdownBubble : UserControl
                 {
                     if (cellObj is TableCell cell)
                     {
-                        var rtb = new RichTextBlock { IsTextSelectionEnabled = true };
+                        var rtb = new RichTextBlock { 
+                            IsTextSelectionEnabled = true, 
+                            TextWrapping = TextWrapping.Wrap,
+                            HorizontalAlignment = HorizontalAlignment.Stretch
+
+                        };
                         var para = new Paragraph();
 
                         foreach (var block in cell)
