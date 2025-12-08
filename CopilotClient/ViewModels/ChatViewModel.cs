@@ -21,6 +21,8 @@ public class ChatViewModel : ViewModelBase
 
     private bool _isEditingTitle;
 
+    private bool _useStreaming = true;
+
     private readonly Conversation _conversation;
 
     public Guid ConversationId { get =>  _conversation.Id; }
@@ -162,6 +164,7 @@ public class ChatViewModel : ViewModelBase
         var userMessage = ChatMessage.CreateNewUserMessage(text);
         AddMessage(userMessage);
 
+        // Auto-title only for first message and default title
         if (Messages.Count == 1 && (string.IsNullOrWhiteSpace(Title) || Title == "New conversation"))
         {
             Title = userMessage.Content.Length > 40
@@ -169,45 +172,140 @@ public class ChatViewModel : ViewModelBase
                 : userMessage.Content;
         }
 
+        // Persist: new user message (and maybe new title)
         PersistRequested?.Invoke(_conversation);
-
-        var assistantMessage = new ChatMessage(
-            clientId: Guid.NewGuid(),
-            role: ChatRole.Assistant,
-            content: string.Empty,
-            status: MessageStatus.Typing,
-            createdAt: DateTime.Now
-        );
-
-        AddMessage(assistantMessage);
-
-        var replyMessage = default(ChatMessage);
 
         IsBusy = true;
         try
         {
-            replyMessage = await _chatService.SendAsync(BuildServiceConversation());
-            userMessage.Status = MessageStatus.Sent;
+            if (UseStreaming)
+            {
+                await SendWithStreamingAsync(userMessage);
+            }
+            else
+            {
+                await SendNonStreamingAsync(userMessage);
+            }
         }
         catch (OperationCanceledException)
         {
-            RemoveMessage(assistantMessage);
-            IsBusy = false;
-            return;
         }
         finally
         {
-            RemoveMessage(assistantMessage);
             IsBusy = false;
         }
 
-        if (replyMessage is not null)
-        {
-            AddMessage(replyMessage);
-        }
-
+        // Persist again: after assistant reply / failure state
         PersistRequested?.Invoke(_conversation);
     }
+
+    private async Task SendNonStreamingAsync(ChatMessage userMessage)
+    {
+        var request = BuildServiceConversation();
+
+        var typingMessage = new ChatMessage(
+            clientId: Guid.NewGuid(),
+            role: ChatRole.Assistant,
+            content: string.Empty,
+            status: MessageStatus.Typing,
+            createdAt: DateTime.UtcNow
+        );
+
+        AddMessage(typingMessage);
+
+        try
+        {
+            var replyMessage = await _chatService.SendAsync(request);
+            userMessage.Status = MessageStatus.Sent;
+
+            RemoveMessage(typingMessage);
+            AddMessage(replyMessage);
+        }
+        catch (OperationCanceledException)
+        {
+            RemoveMessage(typingMessage);
+        }
+        catch (Exception ex)
+        {
+            typingMessage.Status = MessageStatus.Failed;
+            typingMessage.ErrorMessage = ex.Message;
+            typingMessage.Content = ex.Message;
+        }
+    }
+
+
+    private async Task SendWithStreamingAsync(ChatMessage userMessage)
+    {
+        var request = BuildServiceConversation();
+
+        var typingMessage = new ChatMessage(
+            clientId: Guid.NewGuid(),
+            role: ChatRole.Assistant,
+            content: string.Empty,
+            status: MessageStatus.Typing,
+            createdAt: DateTime.UtcNow
+        );
+
+        AddMessage(typingMessage);
+
+        ChatMessage? assistantMessage = null;
+
+        try
+        {
+            var stream = _chatService.StreamAsync(request);
+
+            bool sawFirstChunk = false;
+
+            await foreach (var chunk in stream)
+            {
+                if (!sawFirstChunk)
+                {
+                    sawFirstChunk = true;
+
+                    RemoveMessage(typingMessage);
+
+                    assistantMessage = new ChatMessage(
+                        clientId: Guid.NewGuid(),
+                        role: ChatRole.Assistant,
+                        content: chunk,
+                        status: MessageStatus.Streaming,
+                        createdAt: DateTime.UtcNow
+                    );
+
+                    AddMessage(assistantMessage);
+                }
+                else
+                {
+                    assistantMessage!.Content += chunk;
+                }
+            }
+
+            if (assistantMessage is not null)
+            {
+                assistantMessage.Status = MessageStatus.Sent;
+                userMessage.Status = MessageStatus.Sent;
+            }
+            else
+            {
+                typingMessage.Status = MessageStatus.Failed;
+                typingMessage.ErrorMessage = "The model did not return any content.";
+                typingMessage.Content = typingMessage.ErrorMessage;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            RemoveMessage(typingMessage);
+        }
+        catch (Exception ex)
+        {
+            var target = assistantMessage ?? typingMessage;
+            target.Status = MessageStatus.Failed;
+            target.ErrorMessage = ex.Message;
+            target.Content = ex.Message;
+        }
+    }
+
+
 
     private ServiceConversation BuildServiceConversation()
     {
@@ -242,6 +340,19 @@ public class ChatViewModel : ViewModelBase
     {
         // Title is already updated via binding when the TextBox loses focus or Enter is pressed
         IsEditingTitle = false;
+    }
+
+    public bool UseStreaming
+    {
+        get => _useStreaming;
+        set
+        {
+            if (_useStreaming != value)
+            {
+                _useStreaming = value;
+                OnPropertyChanged();
+            }
+        }
     }
 
     public Array AvailableModes => Enum.GetValues(typeof(ConversationMode));

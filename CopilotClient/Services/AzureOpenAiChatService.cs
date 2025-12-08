@@ -7,6 +7,7 @@ using OpenAI.Chat;
 using Polly;
 using Polly.Retry;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -97,6 +98,37 @@ public sealed class AzureOpenAiChatService : IChatService
             return BuildFailedMessage(
             "An error occurred while calling Azure OpenAI.",
             ex.Message);
+        }
+    }
+
+    public async IAsyncEnumerable<string> StreamAsync(
+    ServiceConversation request,
+    [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var chatMessages = BuildChatMessages(request);
+
+        var chatRequestOptions = new ChatCompletionOptions
+        {
+            Temperature = _options.Temperature,
+            MaxOutputTokenCount = _options.MaxOutputTokens
+        };
+
+        // This returns an async stream of updates from the model
+        var streamingResult = _chatClient.CompleteChatStreamingAsync(
+            chatMessages,
+            chatRequestOptions,
+            cancellationToken);
+
+        await foreach (var update in streamingResult.WithCancellation(cancellationToken))
+        {
+            // Each update can have multiple content parts
+            foreach (var part in update.ContentUpdate)
+            {
+                if (part.Kind == ChatMessageContentPartKind.Text && part.Text is not null)
+                {
+                    yield return part.Text;
+                }
+            }
         }
     }
 
