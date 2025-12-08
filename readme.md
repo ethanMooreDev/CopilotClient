@@ -4,6 +4,8 @@ A WinUI3–based chat client built as a learning project and work-in-progress (W
 
 > Note: This project is a personal learning tool and is not affiliated with, endorsed by, or associated with Microsoft, Windows Copilot, GitHub Copilot, or any other Copilot-branded product.
 
+![Alt text](/images/screenshot-prompt-response.png)
+
 ---
 
 Table of contents
@@ -19,7 +21,6 @@ Table of contents
 - [Known limitations (WIP)](#known-limitations-wip)
 - [Roadmap / Next steps](#roadmap--next-steps)
 - [Security & Configuration](#security--configuration)
-- [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
 
@@ -47,7 +48,10 @@ The project is intentionally a WIP and not production-ready.
 - Custom `MarkdownBubble` renderer supporting headings, lists, tables, images, fenced/indented code blocks, inline code, and basic HTML spans
 - Code blocks include copy-to-clipboard and syntax highlighting integration
 - GitHub-style task list detection (`- [x]` / `- [ ]` → disabled checkboxes)
-- MVVM structure with observable collections and XAML templates for messages
+- MVVM structure with observable collections and XAML templates for messages  
+
+#### Markdown Rendering Example  
+![Alt text](/images/screenshot-markdown-code.png)
 
 ---
 
