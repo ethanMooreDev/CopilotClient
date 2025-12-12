@@ -22,23 +22,31 @@ public sealed partial class ChatView : UserControl
         InitializeComponent();
 
         DataContextChanged += ChatView_DataContextChanged;
+        Unloaded += ChatView_Unloaded;
     }
 
-    private void ChatView_DataContextChanged(Microsoft.UI.Xaml.FrameworkElement sender, Microsoft.UI.Xaml.DataContextChangedEventArgs args)
+    private void ChatView_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
     {
-        if (args.NewValue is ConversationManagerViewModel vm)
-        {
-            if (_chatViewModel != null)
-            {
-                _chatViewModel.Messages.CollectionChanged -= Messages_CollectionChanged;
-            }
+        // detach previous
+        if (_chatViewModel != null)
+            _chatViewModel.Messages.CollectionChanged -= Messages_CollectionChanged;
 
-            if(vm.SelectedConversation is ChatViewModel chatViewModel)
-            {
-                chatViewModel.Messages.CollectionChanged += Messages_CollectionChanged;
-                _chatViewModel = chatViewModel;
-            }
+        _chatViewModel = null;
+
+        if (args.NewValue is ConversationManagerViewModel vm && vm.SelectedConversation is ChatViewModel chatViewModel)
+        {
+            chatViewModel.Messages.CollectionChanged += Messages_CollectionChanged;
+            _chatViewModel = chatViewModel;
         }
+    }
+
+    private void ChatView_Unloaded(object sender, RoutedEventArgs e)
+    {
+        if (_chatViewModel != null)
+            _chatViewModel.Messages.CollectionChanged -= Messages_CollectionChanged;
+
+        DataContextChanged -= ChatView_DataContextChanged;
+        Unloaded -= ChatView_Unloaded;
     }
 
     private void Messages_CollectionChanged(
@@ -140,16 +148,18 @@ public sealed partial class ChatView : UserControl
 
     private void ChatArea_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
     {
+        // Detach previous subscription if present
+        if (_chatViewModel != null)
+        {
+            _chatViewModel.Messages.CollectionChanged -= Messages_CollectionChanged;
+            _chatViewModel = null;
+        }
+
+        // Attach to the new ChatViewModel (if provided)
         if (args.NewValue is ChatViewModel vm)
         {
-            if (_chatViewModel != null)
-            {
-                _chatViewModel.Messages.CollectionChanged -= Messages_CollectionChanged;
-            }
-
             vm.Messages.CollectionChanged += Messages_CollectionChanged;
             _chatViewModel = vm;
-            
         }
     }
 

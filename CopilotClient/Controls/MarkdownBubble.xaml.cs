@@ -50,6 +50,9 @@ public sealed partial class MarkdownBubble : UserControl
     private static readonly MarkdownPipeline Pipeline =
         new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
+    // Track cleanup actions for dynamically attached handlers/resources
+    private readonly Dictionary<DependencyObject, Action> _cleanupActions = new();
+
     public MarkdownBubble()
     {
         this.InitializeComponent();
@@ -72,6 +75,8 @@ public sealed partial class MarkdownBubble : UserControl
 
     private void RenderMarkdown(string markdown)
     {
+        // Clean up handlers/resources from previous content before clearing
+        DisposeContentChildren();
         ContentPanel.Children.Clear();
         var doc = Markdig.Markdown.Parse(markdown, Pipeline);
 
@@ -116,6 +121,97 @@ public sealed partial class MarkdownBubble : UserControl
                 ((FrameworkElement) element).HorizontalAlignment = HorizontalAlignment.Stretch;
 
                 ContentPanel.Children.Add(element);
+            }
+        }
+    }
+
+    // Unsubscribe handlers and release resources for current children
+    private void DisposeContentChildren()
+    {
+        // Invoke registered cleanup actions
+        foreach (var kv in _cleanupActions)
+        {
+            try
+            {
+                kv.Value?.Invoke();
+            }
+            catch { }
+        }
+        _cleanupActions.Clear();
+
+        // Additionally clear Inline collections and image sources for UI elements
+        foreach (var child in ContentPanel.Children)
+        {
+            if (child is RichTextBlock rtb)
+            {
+                foreach (var block in rtb.Blocks)
+                {
+                    if (block is Paragraph para)
+                    {
+                        para.Inlines.Clear();
+                    }
+                }
+                rtb.Blocks.Clear();
+            }
+
+            if (child is Panel panel)
+            {
+                // walk panel children to clear nested RichTextBlocks, Images, etc.
+                ClearPanelRecursively(panel);
+            }
+
+            if (child is Image img)
+            {
+                // cleanup actions already invoked above; ensure source removed
+                if (img.Source is BitmapImage bmp)
+                {
+                    img.Source = null;
+                    try { bmp.UriSource = null; } catch { }
+                }
+            }
+        }
+    }
+
+    private void ClearPanelRecursively(Panel panel)
+    {
+        foreach (var item in panel.Children)
+        {
+            if (item is RichTextBlock rtb)
+            {
+                foreach (var block in rtb.Blocks)
+                {
+                    if (block is Paragraph para)
+                    {
+                        para.Inlines.Clear();
+                    }
+                }
+                rtb.Blocks.Clear();
+            }
+            else if (item is Panel childPanel)
+            {
+                ClearPanelRecursively(childPanel);
+            }
+            else if (item is Border border && border.Child is FrameworkElement fe)
+            {
+                if (fe is RichTextBlock innerRtb)
+                {
+                    foreach (var block in innerRtb.Blocks)
+                    {
+                        if (block is Paragraph para)
+                        {
+                            para.Inlines.Clear();
+                        }
+                    }
+                    innerRtb.Blocks.Clear();
+                }
+                else if (fe is Image img)
+                {
+                    if (_cleanupActions.TryGetValue(img, out var _))
+                    {
+                        // cleanup action will handle unsubscribing
+                    }
+                    img.Source = null;
+                }
             }
         }
     }
@@ -272,8 +368,7 @@ public sealed partial class MarkdownBubble : UserControl
                                     {
                                         Text = label,
                                         Style = (Style)Resources["MdParagraph"],
-                                        TextWrapping = TextWrapping.Wrap
-                                    }
+                                        TextWrapping = TextWrapping.Wrap                                    }
                                 };
                                 content.Children.Add(cb);
 
@@ -337,12 +432,15 @@ public sealed partial class MarkdownBubble : UserControl
             HorizontalAlignment = HorizontalAlignment.Right
         };
 
-        copyButton.Click += (_, __) =>
+        RoutedEventHandler copyHandler = (_, __) =>
         {
             var dataPackage = new DataPackage { RequestedOperation = DataPackageOperation.Copy };
             dataPackage.SetText(codeText);
             Clipboard.SetContent(dataPackage);
         };
+
+        copyButton.Click += copyHandler;
+        _cleanupActions[copyButton] = () => { try { copyButton.Click -= copyHandler; } catch { } };
 
         var headerGrid = new Grid
         {
@@ -422,12 +520,15 @@ public sealed partial class MarkdownBubble : UserControl
             HorizontalAlignment = HorizontalAlignment.Right
         };
 
-        copyButton.Click += (_, __) =>
+        RoutedEventHandler copyHandler = (_, __) =>
         {
             var dataPackage = new DataPackage { RequestedOperation = DataPackageOperation.Copy };
             dataPackage.SetText(codeText);
             Clipboard.SetContent(dataPackage);
         };
+
+        copyButton.Click += copyHandler;
+        _cleanupActions[copyButton] = () => { try { copyButton.Click -= copyHandler; } catch { } };
 
         var headerGrid = new Grid
         {
@@ -653,15 +754,15 @@ public sealed partial class MarkdownBubble : UserControl
                     // Create a Border to provide background and padding
                     var border = new Border
                     {
-                        Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 40, 40, 40)), // dark gray background
+                        Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255,40,40,40)), // dark gray background
                         CornerRadius = new CornerRadius(3),
-                        Padding = new Thickness(4, 0, 4, 0),
-                        Margin = new Thickness(2, 0, 2, 0),
+                        Padding = new Thickness(4,0,4,0),
+                        Margin = new Thickness(2,0,2,0),
                         Child = new TextBlock
                         {
                             Text = code.Content,
                             FontFamily = new FontFamily("Consolas"),
-                            Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 200, 200, 200))
+                            Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255,200,200,200))
                         }
                     };
 
@@ -679,11 +780,18 @@ public sealed partial class MarkdownBubble : UserControl
                     {
                         var hyperlink = new Hyperlink();
                         hyperlink.Inlines.Add(new Run { Text = InlineToPlainText(link.FirstChild) ?? link.Url });
-                        hyperlink.Click += async (_, __) =>
+
+                        Windows.Foundation.TypedEventHandler<Hyperlink, Microsoft.UI.Xaml.Documents.HyperlinkClickEventArgs> clickHandler = null;
+                        clickHandler = async (sender, args) =>
                         {
                             if (!string.IsNullOrEmpty(link.Url))
                                 await Windows.System.Launcher.LaunchUriAsync(new Uri(link.Url));
                         };
+
+                        hyperlink.Click += clickHandler;
+                        // register cleanup so we can unsubscribe later
+                        _cleanupActions[hyperlink] = () => { try { hyperlink.Click -= clickHandler; } catch { } };
+
                         para.Inlines.Add(hyperlink);
                     }
                     break;
@@ -734,8 +842,8 @@ public sealed partial class MarkdownBubble : UserControl
         var img = new Image
         {
             Stretch = Stretch.Uniform,
-            MaxWidth = 400,
-            Margin = new Thickness(0, 8, 0, 8)
+            MaxWidth =400,
+            Margin = new Thickness(0,8,0,8)
         };
 
         try
@@ -753,16 +861,31 @@ public sealed partial class MarkdownBubble : UserControl
             ToolTipService.SetToolTip(img, imageInline.FirstChild.ToString());
 
         // Handle broken links
-        img.ImageFailed += (_, __) =>
+        Microsoft.UI.Xaml.ExceptionRoutedEventHandler handler = null;
+        handler = (sender, args) =>
         {
-            var parent = img.Parent as Panel;
-            if (parent != null)
+            try
             {
-                int index = parent.Children.IndexOf(img);
-                parent.Children.RemoveAt(index);
-                parent.Children.Insert(index, CreateBrokenImagePlaceholder(imageInline));
+                var parent = img.Parent as Panel;
+                if (parent != null)
+                {
+                    int index = parent.Children.IndexOf(img);
+                    parent.Children.RemoveAt(index);
+                    parent.Children.Insert(index, CreateBrokenImagePlaceholder(imageInline));
+                }
+            }
+            finally
+            {
+                // remove event and cleanup registration
+                try { img.ImageFailed -= handler; } catch { }
+                if (_cleanupActions.ContainsKey(img)) _cleanupActions.Remove(img);
             }
         };
+
+        img.ImageFailed += handler;
+
+        // register cleanup action so we can unsubscribe later
+        _cleanupActions[img] = () => { try { img.ImageFailed -= handler; } catch { } if (img.Source is BitmapImage bmp) img.Source = null; };
 
         return img;
     }
