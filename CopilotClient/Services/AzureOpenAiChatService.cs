@@ -7,6 +7,7 @@ using OpenAI.Chat;
 using Polly;
 using Polly.Retry;
 using System;
+using System.ClientModel.Primitives;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -54,7 +55,8 @@ public sealed class AzureOpenAiChatService : IChatService
             var chatRequestOptions = new ChatCompletionOptions
             {
                 Temperature = request.Mode == CopilotClient.Models.ConversationMode.Explain ? _options.ExplainTemperature : _options.Temperature,
-                MaxOutputTokenCount = request.Mode == CopilotClient.Models.ConversationMode.Explain ? _options.ExplainMaxOutputTokens : _options.MaxOutputTokens
+                MaxOutputTokenCount = request.Mode == CopilotClient.Models.ConversationMode.Explain ? _options.ExplainMaxOutputTokens : _options.MaxOutputTokens,
+
             };
 
             ChatCompletion response = await _retryPolicy.ExecuteAsync(
@@ -106,12 +108,24 @@ public sealed class AzureOpenAiChatService : IChatService
     [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var chatMessages = BuildChatMessages(request);
+        #pragma warning disable AOAI001
 
-        var chatRequestOptions = new ChatCompletionOptions
-        {
-            Temperature = _options.Temperature,
-            MaxOutputTokenCount = _options.MaxOutputTokens
-        };
+        ChatCompletionOptions chatRequestOptions = ModelReaderWriter.Read<ChatCompletionOptions>(BinaryData.FromString("{}")!)!;
+
+        //var chatRequestOptions = new ChatCompletionOptions()
+        //{
+        //    Temperature = _options.Temperature,
+        //    MaxOutputTokenCount = _options.MaxOutputTokens
+        //};
+
+        //chatRequestOptions.Temperature = _options.Temperature;
+        chatRequestOptions.MaxOutputTokenCount = _options.MaxOutputTokens;
+        
+        chatRequestOptions.SetNewMaxCompletionTokensPropertyEnabled(true);
+
+
+        
+        #pragma warning restore AOAI001
 
         // This returns an async stream of updates from the model
         var streamingResult = _chatClient.CompleteChatStreamingAsync(
