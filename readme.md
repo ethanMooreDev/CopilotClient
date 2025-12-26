@@ -1,4 +1,4 @@
-﻿# CopilotClient
+﻿# Desktop AI Chat Client
 
 A WinUI3–based chat client built as a learning project and work-in-progress (WIP). This repository is intended for experimentation with Azure OpenAI integration, MVVM architecture, custom Markdown rendering, resilient network patterns, and client-side UX design.
 
